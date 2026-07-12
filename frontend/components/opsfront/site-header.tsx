@@ -52,7 +52,7 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-2 md:flex">
           <a
-            href="#"
+            href="/login"
             className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Sign in
@@ -89,7 +89,7 @@ export function SiteHeader() {
           ))}
           <div className="mt-2 grid grid-cols-2 gap-2 p-1">
             <a
-              href="#"
+              href="/login"
               className="rounded-lg border border-border px-3 py-2 text-center text-sm text-foreground"
             >
               Sign in
