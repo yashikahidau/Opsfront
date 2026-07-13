@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -12,43 +13,34 @@ import {
   UserPlus,
 } from "lucide-react";
 
-const activity = [
-  {
-    type: "status",
-    title: "Status changed to Escalated",
-    meta: "12 min ago · by D. Cho",
-  },
-  {
-    type: "note",
-    title: "Finance team confirmed the VPN failure is blocking month-end close work.",
-    meta: "24 min ago · internal note by N. Patel",
-  },
-  {
-    type: "assignment",
-    title: "Assigned to D. Cho from triage queue",
-    meta: "41 min ago · by Opsfront auto-routing",
-  },
-  {
-    type: "triage",
-    title: "AI triage raised priority from High to Critical",
-    meta: "53 min ago · based on SLA proximity + requester impact",
-  },
-];
+import { useParams } from "next/navigation";
 
-const comments = [
-  {
-    author: "Aman Verma",
-    role: "Requester",
-    time: "1h ago",
-    body: "The finance team still can’t authenticate through VPN. This is blocking access to the reporting environment and payroll close tasks.",
-  },
-  {
-    author: "D. Cho",
-    role: "Agent",
-    time: "38m ago",
-    body: "Investigating the auth logs now. Looks tied to the latest policy sync. I’ve escalated to the access management queue and I’m validating whether the issue is isolated to the finance group.",
-  },
-];
+import { useTicket } from "@/hooks/useTicket";
+
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+
+import FormAlert from "@/components/form/FormAlert";
+
+import { useComments } from "@/hooks/useComments";
+
+import { useState } from "react";
+
+import { useActivities } from "@/hooks/useActivities";
+
+import type {
+  TicketStatus,
+  TicketPriority,
+} from "@/lib/ticket";
+
+const statusOptions = [
+  "open",
+  "in-progress",
+  "waiting",
+  "resolved",
+  "closed",
+] as const;
+
+
 
 const related = [
   "OPS-2479 · Production deploy access blocked for data team",
@@ -56,7 +48,112 @@ const related = [
   "OPS-2441 · Okta group sync delay for contractors",
 ];
 
+function getTimeRemaining(
+  slaDeadline: string | null
+) {
+  if (!slaDeadline) return "No SLA";
+
+  const now = new Date();
+
+  const deadline = new Date(slaDeadline);
+
+  const diff = deadline.getTime() - now.getTime();
+
+  if (diff <= 0) return "Breached";
+
+  const mins = Math.floor(diff / 60000);
+
+  const hrs = Math.floor(mins / 60);
+
+  if (hrs > 0) {
+    return `${hrs}h ${mins % 60}m`;
+  }
+
+  return `${mins}m`;
+}
+
 export default function TicketDetailPage() {
+
+  const params = useParams();
+
+  const {
+    ticket,
+    loading,
+    error,
+    changeStatus,
+    changePriority,
+    resolveTicket,
+  } = useTicket(params.id as string);
+
+  const {
+    comments,
+    loading: commentsLoading,
+    createComment,
+  } = useComments(params.id as string);
+
+  const {
+    activities,
+    loading: activitiesLoading,
+    refresh: refreshActivities,
+  } = useActivities(params.id as string);
+
+  const [newComment, setNewComment] = useState("");
+
+  const [posting, setPosting] = useState(false);
+
+  async function handlePostComment() {
+    if (!newComment.trim()) return;
+
+    try {
+      setPosting(true);
+
+      await createComment(newComment);
+
+      await refreshActivities();
+
+      setNewComment("");
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  async function handleStatusChange(
+  status: TicketStatus
+) {
+  await changeStatus(status);
+
+  await refreshActivities();
+}
+
+  async function handlePriorityChange(
+  priority: TicketPriority
+) {
+  await changePriority(priority);
+
+  await refreshActivities();
+}
+
+  if (loading) {
+    return (
+      <div className="grid min-h-[60vh] place-items-center">
+        <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/40 px-6 py-4">
+          <LoadingSpinner className="h-5 w-5 text-primary" />
+
+          <span className="text-sm text-muted-foreground">
+            Loading ticket...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !ticket) {
+    return (
+      <FormAlert variant="error">
+        {error || "Ticket not found."}
+      </FormAlert>
+    );
+  }
   return (
     <div className="space-y-7">
       {/* Back / top actions */}
@@ -71,7 +168,7 @@ export default function TicketDetailPage() {
           </Link>
 
           <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            OPS-2481
+            #{ticket._id.slice(-6).toUpperCase()}
           </span>
         </div>
 
@@ -82,8 +179,14 @@ export default function TicketDetailPage() {
           <button className="cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-card">
             Add note
           </button>
-          <button className="cursor-pointer rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95">
-            Resolve ticket
+          <button
+            onClick={resolveTicket}
+            disabled={ticket.status === "resolved"}
+            className="cursor-pointer rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {ticket.status === "resolved"
+              ? "Resolved"
+              : "Resolve ticket"}
           </button>
         </div>
       </section>
@@ -95,15 +198,13 @@ export default function TicketDetailPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-3xl">
                 <p className="text-[11px] uppercase tracking-[0.28em] text-primary/80">
-                  Access Management
+                  {ticket.category.toUpperCase()}
                 </p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                  VPN auth failing for finance team
+                  {ticket.title}
                 </h2>
                 <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-                  Finance users are unable to authenticate through the company VPN
-                  after the latest policy sync. The issue is blocking access to
-                  internal reporting systems and payroll-close workflows.
+                  {ticket.description}
                 </p>
               </div>
 
@@ -113,17 +214,96 @@ export default function TicketDetailPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Badge tone="critical">Critical</Badge>
-              <Badge tone="escalated">Escalated</Badge>
-              <Badge tone="risk">At Risk</Badge>
-              <Badge tone="watch">18m left</Badge>
+              {/* Priority */}
+              <Badge
+                tone={
+                  ticket.priority === "critical"
+                    ? "critical"
+                    : "watch"
+                }
+              >
+                {ticket.priority
+                  .replace(/\b\w/g, (c: string) =>
+                    c.toUpperCase()
+                  )}
+              </Badge>
+
+              {/* Status */}
+              <Badge
+                tone={
+                  ticket.status === "resolved"
+                    ? "watch"
+                    : ticket.status === "closed"
+                      ? "watch"
+                      : "escalated"
+                }
+              >
+                {ticket.status
+                  .replace("-", " ")
+                  .replace(/\b\w/g, (c: string) =>
+                    c.toUpperCase()
+                  )}
+              </Badge>
+
+              {/* Risk */}
+              <Badge
+                tone={
+                  ticket.riskScore >= 70
+                    ? "risk"
+                    : "watch"
+                }
+              >
+                {ticket.riskScore >= 70
+                  ? "At Risk"
+                  : "Healthy"}
+              </Badge>
+
+              {/* SLA */}
+              {ticket.slaDeadline && (
+                <Badge
+                  tone={
+                    new Date(ticket.slaDeadline) <
+                      new Date()
+                      ? "critical"
+                      : "watch"
+                  }
+                >
+                  {new Date(
+                    ticket.slaDeadline
+                  ).toLocaleString()}
+                </Badge>
+              )}
             </div>
 
             <div className="grid gap-4 pt-2 sm:grid-cols-2 xl:grid-cols-4">
-              <MetaCard label="Requester" value="Aman Verma" sub="Finance Ops" />
-              <MetaCard label="Assigned to" value="D. Cho" sub="Access Management" />
-              <MetaCard label="Created" value="Today, 9:14 AM" sub="P1 response SLA" />
-              <MetaCard label="Last updated" value="12 min ago" sub="Escalated from queue" />
+              <MetaCard
+                label="Requester"
+                value={ticket.createdBy.name}
+                sub={ticket.createdBy.email}
+              />
+              <MetaCard
+                label="Assigned to"
+                value={
+                  ticket.assignedTo
+                    ? ticket.assignedTo.name
+                    : "Unassigned"
+                }
+                sub={
+                  ticket.assignedTo
+                    ? ticket.assignedTo.email
+                    : "Waiting for assignment"
+                }
+              />
+              <MetaCard
+                label="Created"
+                value={new Date(ticket.createdAt).toLocaleString()}
+                sub="Ticket created"
+              />
+              <MetaCard
+                label="Last updated"
+                value={new Date(ticket.updatedAt).toLocaleString()}
+                sub="Latest activity"
+              />
             </div>
           </div>
         </div>
@@ -135,7 +315,7 @@ export default function TicketDetailPage() {
 
           <div className="mt-4">
             <p className="font-mono text-5xl font-semibold tracking-tight text-primary">
-              94
+              {ticket.riskScore}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
               Current risk score for this ticket
@@ -143,13 +323,37 @@ export default function TicketDetailPage() {
           </div>
 
           <div className="mt-5 h-2 overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-[94%] rounded-full bg-primary" />
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{
+                width: `${ticket.riskScore}%`,
+              }}
+            />
           </div>
 
           <div className="mt-6 space-y-3">
-            <SignalRow label="Time to breach" value="18m" />
-            <SignalRow label="Queue pressure" value="High" />
-            <SignalRow label="Requester impact" value="Critical workflow blocked" />
+            <SignalRow
+              label="Time to breach"
+              value={
+                ticket.slaDeadline
+                  ? new Date(ticket.slaDeadline).toLocaleString()
+                  : "No SLA"
+              }
+            />
+            <SignalRow
+              label="Queue pressure"
+              value={
+                ticket.riskScore >= 70
+                  ? "High"
+                  : ticket.riskScore >= 40
+                    ? "Medium"
+                    : "Low"
+              }
+            />
+            <SignalRow
+              label="Requester impact"
+              value={ticket.priority.toUpperCase()}
+            />
           </div>
 
           <div className="mt-6 rounded-2xl border border-border bg-card/50 p-4">
@@ -162,9 +366,13 @@ export default function TicketDetailPage() {
                   AI triage summary
                 </p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Opsfront flagged this as high-risk because the requester belongs
-                  to finance, the issue blocks payroll-close tasks, and the
-                  ticket has already stalled once in the triage queue.
+                  {ticket.riskScore >= 90
+                    ? "This ticket is in a critical state and requires immediate attention because the risk score is extremely high."
+                    : ticket.riskScore >= 70
+                      ? "This ticket has elevated operational risk and should be prioritized to avoid SLA breach."
+                      : ticket.riskScore >= 40
+                        ? "This ticket should be monitored closely. Current indicators suggest moderate operational risk."
+                        : "This ticket is currently healthy with no significant operational risk indicators."}
                 </p>
               </div>
             </div>
@@ -196,43 +404,56 @@ export default function TicketDetailPage() {
             <div className="mt-5 space-y-4">
               {comments.map((comment) => (
                 <div
-                  key={`${comment.author}-${comment.time}`}
+                  key={comment._id}
                   className="rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
+
                     <div className="flex items-center gap-3">
+
                       <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                        {comment.author
+                        {comment.author.name
                           .split(" ")
                           .map((part) => part[0])
                           .join("")
                           .slice(0, 2)}
                       </div>
+
                       <div>
                         <p className="text-sm font-medium text-foreground">
-                          {comment.author}
+                          {comment.author.name}
                         </p>
+
                         <p className="text-xs text-muted-foreground">
-                          {comment.role}
+                          {comment.author.email}
                         </p>
                       </div>
+
                     </div>
 
-                    <p className="text-xs text-muted-foreground">{comment.time}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(comment.createdAt).toLocaleString()}
+                    </p>
+
                   </div>
 
                   <p className="mt-4 text-sm leading-7 text-muted-foreground">
-                    {comment.body}
+                    {comment.message}
                   </p>
+
                 </div>
               ))}
             </div>
 
             {/* Comment composer */}
             <div className="mt-5 rounded-2xl border border-border bg-background/40 p-4">
-              <div className="rounded-2xl border border-border bg-background/50 px-4 py-3 text-sm text-muted-foreground transition-all duration-200 hover:border-primary/20 focus-within:border-primary/30">
-                Add an internal update or reply to the requester...
-              </div>
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add an internal update or reply to the requester..."
+                rows={4}
+                className="w-full resize-none rounded-2xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground outline-none transition-all duration-200 focus:border-primary/20"
+              />
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-2">
@@ -246,8 +467,12 @@ export default function TicketDetailPage() {
                   </button>
                 </div>
 
-                <button className="cursor-pointer rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95">
-                  Post update
+                <button
+                  onClick={handlePostComment}
+                  disabled={posting || !newComment.trim()}
+                  className="cursor-pointer rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {posting ? "Posting..." : "Post update"}
                 </button>
               </div>
             </div>
@@ -265,33 +490,73 @@ export default function TicketDetailPage() {
             </div>
 
             <div className="mt-6 space-y-4">
-              {activity.map((item, index) => (
-                <div
-                  key={`${item.title}-${index}`}
-                  className="flex gap-4 rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10"
-                >
-                  <div className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-                    {item.type === "status" ? (
-                      <ShieldAlert className="size-4" />
-                    ) : item.type === "assignment" ? (
-                      <UserPlus className="size-4" />
-                    ) : item.type === "triage" ? (
-                      <Sparkles className="size-4" />
-                    ) : (
-                      <MessageSquare className="size-4" />
-                    )}
+
+              {activitiesLoading ? (
+
+                <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/35 p-4">
+                  <LoadingSpinner className="h-4 w-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">
+                    Loading activity...
+                  </span>
+                </div>
+
+              ) : activities.length === 0 ? (
+
+                <div className="rounded-2xl border border-border bg-background/35 p-4 text-sm text-muted-foreground">
+                  No activity yet.
+                </div>
+
+              ) : (
+
+                activities.map((item) => (
+
+                  <div
+                    key={item._id}
+                    className="flex gap-4 rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10"
+                  >
+
+                    <div className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+
+                      {item.type === "status" ? (
+
+                        <ShieldAlert className="size-4" />
+
+                      ) : item.type === "priority" ? (
+
+                        <Sparkles className="size-4" />
+
+                      ) : item.type === "comment" ? (
+
+                        <MessageSquare className="size-4" />
+
+                      ) : (
+
+                        <Clock3 className="size-4" />
+
+                      )}
+
+                    </div>
+
+                    <div className="flex-1">
+
+                      <p className="text-sm font-medium text-foreground">
+                        {item.message}
+                      </p>
+
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {item.user.name}
+                        {" • "}
+                        {new Date(item.createdAt).toLocaleString()}
+                      </p>
+
+                    </div>
+
                   </div>
 
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {item.title}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {item.meta}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+
+              )}
+
             </div>
           </div>
         </div>
@@ -308,27 +573,107 @@ export default function TicketDetailPage() {
             </div>
 
             <div className="mt-5 space-y-3">
-              <ActionCard
-                title="Change status"
-                value="Escalated"
-                helper="Move to waiting, in progress, or resolved"
-              />
+              <div className="rounded-2xl border border-border bg-background/35 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Change status
+                    </p>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Update the current ticket status
+                    </p>
+                  </div>
+
+                  <select
+                    value={ticket.status}
+                    onChange={(e) =>
+                      handleStatusChange(
+                        e.target.value as typeof ticket.status
+                      )
+                    }
+                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+                  >
+                    {statusOptions.map((status) => (
+                      <option
+                        key={status}
+                        value={status}
+                      >
+                        {status
+                          .replace("-", " ")
+                          .replace(/\b\w/g, (c: string) =>
+                            c.toUpperCase()
+                          )}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <ActionCard
                 title="Assigned owner"
-                value="D. Cho"
-                helper="Access management queue"
+                value={
+                  ticket.assignedTo
+                    ? ticket.assignedTo.name
+                    : "Unassigned"
+                }
+                helper={
+                  ticket.assignedTo
+                    ? ticket.assignedTo.email
+                    : "Waiting for assignment"
+                }
               />
-              <ActionCard
-                title="Priority"
-                value="Critical"
-                helper="Raised by AI triage"
-              />
+
+              <div className="rounded-2xl border border-border bg-background/35 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Priority
+                    </p>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Update ticket priority
+                    </p>
+                  </div>
+
+                  <select
+                    value={ticket.priority}
+                    onChange={(e) =>
+                      handlePriorityChange(
+                        e.target.value as typeof ticket.priority
+                      )
+                    }
+                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+              </div>
+
               <ActionCard
                 title="Escalation state"
-                value="Live"
-                helper="Breaching in 18 minutes"
-                danger
+                value={
+                  ticket.riskScore >= 90
+                    ? "Critical"
+                    : ticket.riskScore >= 70
+                      ? "At Risk"
+                      : ticket.riskScore >= 40
+                        ? "Watch"
+                        : "Healthy"
+                }
+                helper={
+                  ticket.slaDeadline
+                    ? `SLA: ${new Date(
+                      ticket.slaDeadline
+                    ).toLocaleString()}`
+                    : "No SLA assigned"
+                }
+                danger={ticket.riskScore >= 70}
               />
+
             </div>
           </div>
 
@@ -342,9 +687,35 @@ export default function TicketDetailPage() {
             </div>
 
             <div className="mt-5 space-y-3">
-              <SlaRow label="Response target" value="10:00 AM today" />
-              <SlaRow label="Resolution target" value="11:30 AM today" />
-              <SlaRow label="Time remaining" value="18m" danger />
+              <SlaRow
+                label="SLA Deadline"
+                value={
+                  ticket.slaDeadline
+                    ? new Date(
+                      ticket.slaDeadline
+                    ).toLocaleString()
+                    : "No SLA"
+                }
+              />
+
+              <SlaRow
+                label="Created"
+                value={new Date(
+                  ticket.createdAt
+                ).toLocaleString()}
+              />
+
+              <SlaRow
+                label="Time Remaining"
+                value={getTimeRemaining(
+                  ticket.slaDeadline
+                )}
+                danger={
+                  !!ticket.slaDeadline &&
+                  new Date(ticket.slaDeadline) <
+                  new Date()
+                }
+              />
             </div>
           </div>
 
@@ -448,9 +819,8 @@ function ActionCard({
         <p className="mt-1 text-xs text-muted-foreground">{helper}</p>
       </div>
       <span
-        className={`text-sm font-medium ${
-          danger ? "text-destructive" : "text-foreground"
-        }`}
+        className={`text-sm font-medium ${danger ? "text-destructive" : "text-foreground"
+          }`}
       >
         {value}
       </span>
@@ -487,11 +857,10 @@ function ChecklistItem({
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/35 px-4 py-3">
       <div
-        className={`grid size-5 place-items-center rounded-full border ${
-          done
-            ? "border-[color:var(--success)]/30 bg-[color:var(--success)]/10 text-[color:var(--success)]"
-            : "border-border bg-background/50 text-muted-foreground"
-        }`}
+        className={`grid size-5 place-items-center rounded-full border ${done
+          ? "border-[color:var(--success)]/30 bg-[color:var(--success)]/10 text-[color:var(--success)]"
+          : "border-border bg-background/50 text-muted-foreground"
+          }`}
       >
         {done ? <CheckCircle2 className="size-3.5" /> : <Clock3 className="size-3.5" />}
       </div>
@@ -511,10 +880,10 @@ function Badge({
     tone === "critical"
       ? "border-destructive/20 bg-destructive/10 text-destructive"
       : tone === "escalated"
-      ? "border-primary/20 bg-primary/10 text-primary"
-      : tone === "risk"
-      ? "border-primary/20 bg-primary/10 text-primary"
-      : "border-sky-500/20 bg-sky-500/10 text-sky-300";
+        ? "border-primary/20 bg-primary/10 text-primary"
+        : tone === "risk"
+          ? "border-primary/20 bg-primary/10 text-primary"
+          : "border-sky-500/20 bg-sky-500/10 text-sky-300";
 
   return (
     <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles}`}>

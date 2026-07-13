@@ -57,13 +57,20 @@ export interface Ticket {
 
 export interface TicketResponse {
   success: boolean;
-  message: string;
   ticket: Ticket;
 }
 
 export interface TicketsResponse {
   success: boolean;
+
   tickets: Ticket[];
+
+  pagination: {
+    page: number;
+    limit: number;
+    totalTickets: number;
+    totalPages: number;
+  };
 }
 
 export interface CreateTicketPayload {
@@ -91,6 +98,11 @@ export interface TicketFilters {
   category?: string;
 }
 
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+}
+
 function token() {
   const authToken = getStoredToken();
 
@@ -116,9 +128,23 @@ export function createTicket(
 
 
 export function getTickets(
-  filters?: TicketFilters
+  filters?: TicketFilters,
+  pagination?: PaginationParams
 ) {
   const params = new URLSearchParams();
+  if (pagination?.page) {
+    params.append(
+      "page",
+      pagination.page.toString()
+    );
+  }
+
+  if (pagination?.limit) {
+    params.append(
+      "limit",
+      pagination.limit.toString()
+    );
+  }
 
   if (filters?.search) {
     params.append(
@@ -184,6 +210,34 @@ export function updateTicket(
       method: "PATCH",
       token: token(),
       body: payload,
+    }
+  );
+}
+
+export function updateTicketStatus(
+  id: string,
+  status: TicketStatus
+) {
+  return apiRequest<TicketResponse>(
+    `/api/tickets/${id}/status`,
+    {
+      method: "PATCH",
+      token: token(),
+      body: { status },
+    }
+  );
+}
+
+export function updateTicketPriority(
+  id: string,
+  priority: TicketPriority
+) {
+  return apiRequest<TicketResponse>(
+    `/api/tickets/${id}/priority`,
+    {
+      method: "PATCH",
+      token: token(),
+      body: { priority },
     }
   );
 }

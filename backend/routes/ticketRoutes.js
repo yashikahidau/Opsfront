@@ -6,6 +6,8 @@ const {
   getTicketById,
   updateTicket,
   deleteTicket,
+  updateTicketStatus,
+  updateTicketPriority,
 } = require("../controllers/ticketController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -29,5 +31,12 @@ router.patch("/:id", updateTicket);
 
 // Delete Ticket
 router.delete("/:id", deleteTicket);
+
+//Update Ticket Status
+router.patch("/:id/status",protect,updateTicketStatus
+);
+
+//Update Ticket Priority
+router.patch("/:id/priority",protect,updateTicketPriority);
 
 module.exports = router;

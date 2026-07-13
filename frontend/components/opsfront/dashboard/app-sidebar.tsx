@@ -25,11 +25,26 @@ const navItems = [
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function AppSidebar({
+  open,
+  onClose,
+}: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-[270px] shrink-0 border-r border-border bg-card/40 lg:flex lg:flex-col">
+    <aside
+      className={cn(
+        "fixed inset-y-0 left-0 z-40 w-[270px] border-r border-border bg-card/95 backdrop-blur-xl transition-transform duration-300 lg:static lg:flex lg:translate-x-0 lg:flex-col",
+        open
+          ? "translate-x-0"
+          : "-translate-x-full"
+      )}
+    >
       <div className="border-b border-border px-5 py-5">
         <Link href="/" className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-2xl border border-primary/20 bg-primary/10 font-mono text-sm font-semibold text-primary shadow-[0_0_25px_rgba(255,176,72,0.12)]">
@@ -59,6 +74,7 @@ export function AppSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={cn(
                   "group flex items-center gap-3 rounded-2xl border px-3 py-3 text-sm transition-all duration-200",
                   isActive

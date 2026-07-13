@@ -10,6 +10,10 @@ const app = express();
 // connect database
 connectDB();
 
+const searchRoutes = require("./routes/searchRoutes");
+const commentRoutes = require("./routes/commentRoutes");
+const activityRoutes = require("./routes/activityRoutes");
+
 // ===== middleware =====
 app.use(
   cors({
@@ -34,6 +38,9 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/auth", require("./routes/googleAuthRoutes"));
 app.use("/api/tickets",require("./routes/ticketRoutes"));
 app.use("/api/dashboard",require("./routes/dashboardRoutes"));
+app.use("/api/search", searchRoutes);
+app.use("/api/comments", commentRoutes);
+app.use("/api/activities", activityRoutes);
 
 const PORT = process.env.PORT || 5000;
 

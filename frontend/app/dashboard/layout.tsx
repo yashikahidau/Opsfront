@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 
@@ -9,6 +9,7 @@ import { AppSidebar } from "@/components/opsfront/dashboard/app-sidebar";
 import { TopHeader } from "@/components/opsfront/dashboard/top-header";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { SearchContext } from "@/context/SearchContext";
 
 export default function DashboardLayout({
   children,
@@ -24,6 +25,8 @@ export default function DashboardLayout({
 
 function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState("");
   const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   useEffect(() => {
@@ -54,10 +57,23 @@ function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen">
-        <AppSidebar />
+        <AppSidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+          />
+        )}
 
         <div className="flex min-h-screen flex-1 flex-col">
-          <TopHeader />
+          <TopHeader
+            onMenuClick={() => setSidebarOpen(true)}
+            search={globalSearch}
+            setSearch={setGlobalSearch}
+          />
 
           <div className="border-b border-border px-4 py-3 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -90,7 +106,16 @@ function DashboardShell({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+          <SearchContext.Provider
+  value={{
+    search: globalSearch,
+    setSearch: setGlobalSearch,
+  }}
+>
+  <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+    {children}
+  </main>
+</SearchContext.Provider>
         </div>
       </div>
     </div>

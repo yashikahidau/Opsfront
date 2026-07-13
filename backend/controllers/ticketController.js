@@ -1,4 +1,5 @@
 const Ticket = require("../models/Ticket");
+const logActivity = require("../utils/logActivity");
 
 // ======================================
 // Create Ticket
@@ -87,10 +88,11 @@ const getTickets = async (req, res) => {
       status,
       priority,
       category,
+      page = 1,
+      limit = 10,
     } = req.query;
 
     const query = {};
-
     if (search) {
       query.$or = [
         {
@@ -105,6 +107,25 @@ const getTickets = async (req, res) => {
             $options: "i",
           },
         },
+        {
+          priority: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          status: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          category: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+
       ];
     }
 
@@ -126,6 +147,12 @@ const getTickets = async (req, res) => {
       query.category = category;
     }
 
+    const currentPage = Number(page);
+    const pageLimit = Number(limit);
+
+    const totalTickets =
+      await Ticket.countDocuments(query);
+
     const tickets = await Ticket.find(query)
       .populate(
         "createdBy",
@@ -137,11 +164,22 @@ const getTickets = async (req, res) => {
       )
       .sort({
         createdAt: -1,
-      });
+      })
+      .skip((currentPage - 1) * pageLimit)
+      .limit(pageLimit);
 
     return res.json({
       success: true,
       tickets,
+
+      pagination: {
+        page: currentPage,
+        limit: pageLimit,
+        totalTickets,
+        totalPages: Math.ceil(
+          totalTickets / pageLimit
+        ),
+      },
     });
   } catch (error) {
     console.error(error);
@@ -202,6 +240,139 @@ const getTicketById = async (
     });
   }
 };
+
+// ======================================
+// Update Ticket Status
+// ======================================
+
+const updateTicketStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const allowed = [
+      "open",
+      "in-progress",
+      "waiting",
+      "resolved",
+      "closed",
+    ];
+
+    if (!allowed.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status",
+      });
+    }
+
+    const ticket = await Ticket.findById(req.params.id);
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: "Ticket not found",
+      });
+    }
+
+    // Save previous status
+    const previousStatus = ticket.status;
+
+    // Update status
+    ticket.status = status;
+
+    await ticket.save();
+
+    await ticket.populate("createdBy", "name email");
+    await ticket.populate("assignedTo", "name email");
+
+    // Log activity
+    await logActivity({
+      ticket: ticket._id,
+      user: req.user._id,
+      type: "status",
+      message: `Changed status from "${previousStatus}" to "${status}"`,
+    });
+
+    res.json({
+      success: true,
+      ticket,
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to update ticket.",
+    });
+  }
+};
+
+// ======================================
+// Update Ticket Priority
+// ======================================
+const updateTicketPriority = async (req, res) => {
+  try {
+    const { priority } = req.body;
+
+    const allowed = [
+      "low",
+      "medium",
+      "high",
+      "critical",
+    ];
+
+    if (!allowed.includes(priority)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid priority",
+      });
+    }
+
+    const ticket = await Ticket.findById(req.params.id);
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: "Ticket not found.",
+      });
+    }
+
+    const previousPriority = ticket.priority;
+
+    ticket.priority = priority;
+
+    await ticket.save();
+
+    await ticket.populate(
+      "createdBy",
+      "name email"
+    );
+
+    await ticket.populate(
+      "assignedTo",
+      "name email"
+    );
+
+    await logActivity({
+      ticket: ticket._id,
+      user: req.user._id,
+      type: "priority",
+      message: `Changed priority from "${previousPriority}" to "${priority}"`,
+    });
+
+    res.json({
+      success: true,
+      ticket,
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to update priority.",
+    });
+  }
+};
+
 
 // ======================================
 // Update Ticket
@@ -308,6 +479,8 @@ module.exports = {
   createTicket,
   getTickets,
   getTicketById,
+  updateTicketStatus,
+  updateTicketPriority,
   updateTicket,
   deleteTicket,
 };
