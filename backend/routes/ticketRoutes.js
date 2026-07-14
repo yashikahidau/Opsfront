@@ -4,6 +4,7 @@ const {
   createTicket,
   getTickets,
   getTicketById,
+  assignTicket,
   updateTicket,
   deleteTicket,
   updateTicketStatus,
@@ -38,5 +39,9 @@ router.patch("/:id/status",protect,updateTicketStatus
 
 //Update Ticket Priority
 router.patch("/:id/priority",protect,updateTicketPriority);
+
+
+//assign ticket
+router.patch("/:id/assign",protect,assignTicket);
 
 module.exports = router;

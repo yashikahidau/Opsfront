@@ -44,24 +44,30 @@ export function useForm<T extends Record<string, any>>(
     return result.valid;
   }
 
-  function validateAll() {
-    let valid = true;
+ function validateAll() {
+  let valid = true;
 
-    const nextErrors: Errors<T> = {};
+  const nextErrors: Errors<T> = {};
 
-    (Object.keys(schema) as (keyof T)[]).forEach((field) => {
-      const result = schema[field](values[field]);
+  const nextTouched: Touched<T> = {};
 
-      if (!result.valid) {
-        valid = false;
-        nextErrors[field] = result.message;
-      }
-    });
+  (Object.keys(schema) as (keyof T)[]).forEach((field) => {
+    nextTouched[field] = true;
 
-    setErrors(nextErrors);
+    const result = schema[field](values[field]);
 
-    return valid;
-  }
+    if (!result.valid) {
+      valid = false;
+      nextErrors[field] = result.message;
+    }
+  });
+
+  setTouched(nextTouched);
+
+  setErrors(nextErrors);
+
+  return valid;
+}
 
   function setValue<K extends keyof T>(
   field: K,
@@ -72,13 +78,18 @@ export function useForm<T extends Record<string, any>>(
     [field]: value,
   }));
 
-  // remove stale field error
-  setErrors((prev) => ({
+  setTouched((prev) => ({
     ...prev,
-    [field]: undefined,
+    [field]: true,
   }));
 
-  // remove server/API error
+  const result = schema[field](value);
+
+  setErrors((prev) => ({
+    ...prev,
+    [field]: result.valid ? undefined : result.message,
+  }));
+
   setServerError("");
 }
 

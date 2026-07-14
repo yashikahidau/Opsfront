@@ -6,6 +6,7 @@ import {
   getTicket,
   updateTicketStatus,
   updateTicketPriority,
+  assignTicket,
   Ticket,
   TicketStatus,
   TicketPriority,
@@ -73,6 +74,15 @@ export function useTicket(id: string) {
   setTicket(response.ticket);
 }
 
+async function assign(
+  userId: string
+) {
+  const response =
+    await assignTicket(id, userId);
+
+  setTicket(response.ticket);
+}
+
   async function resolveTicket() {
   const response = await updateTicketStatus(
     id,
@@ -89,6 +99,7 @@ export function useTicket(id: string) {
   refresh,
   changeStatus,
   changePriority,
+  assign,
   resolveTicket,
 };
 }

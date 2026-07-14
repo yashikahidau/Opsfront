@@ -7,26 +7,19 @@ import {
   Clock3,
   MessageSquare,
   MoreHorizontal,
-  Paperclip,
   ShieldAlert,
   Sparkles,
-  UserPlus,
 } from "lucide-react";
-
 import { useParams } from "next/navigation";
-
 import { useTicket } from "@/hooks/useTicket";
-
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-
 import FormAlert from "@/components/form/FormAlert";
-
 import { useComments } from "@/hooks/useComments";
-
 import { useState } from "react";
-
 import { useActivities } from "@/hooks/useActivities";
-
+import { useUsers } from "@/hooks/useUsers";
+import { Button } from "@/components/ui/button";
+import { useRef } from "react";
 import type {
   TicketStatus,
   TicketPriority,
@@ -40,13 +33,6 @@ const statusOptions = [
   "closed",
 ] as const;
 
-
-
-const related = [
-  "OPS-2479 · Production deploy access blocked for data team",
-  "OPS-2468 · SSO invite loop for design team onboarding",
-  "OPS-2441 · Okta group sync delay for contractors",
-];
 
 function getTimeRemaining(
   slaDeadline: string | null
@@ -82,12 +68,12 @@ export default function TicketDetailPage() {
     error,
     changeStatus,
     changePriority,
+    assign,
     resolveTicket,
   } = useTicket(params.id as string);
 
   const {
     comments,
-    loading: commentsLoading,
     createComment,
   } = useComments(params.id as string);
 
@@ -97,9 +83,22 @@ export default function TicketDetailPage() {
     refresh: refreshActivities,
   } = useActivities(params.id as string);
 
+  const {
+    users,
+  } = useUsers();
+
   const [newComment, setNewComment] = useState("");
 
   const [posting, setPosting] = useState(false);
+
+  const [showAssignDialog, setShowAssignDialog] =
+    useState(false);
+
+  const [selectedUser, setSelectedUser] =
+    useState("");
+
+  const commentRef =
+    useRef<HTMLTextAreaElement>(null);
 
   async function handlePostComment() {
     if (!newComment.trim()) return;
@@ -118,20 +117,20 @@ export default function TicketDetailPage() {
   }
 
   async function handleStatusChange(
-  status: TicketStatus
-) {
-  await changeStatus(status);
+    status: TicketStatus
+  ) {
+    await changeStatus(status);
 
-  await refreshActivities();
-}
+    await refreshActivities();
+  }
 
   async function handlePriorityChange(
-  priority: TicketPriority
-) {
-  await changePriority(priority);
+    priority: TicketPriority
+  ) {
+    await changePriority(priority);
 
-  await refreshActivities();
-}
+    await refreshActivities();
+  }
 
   if (loading) {
     return (
@@ -173,12 +172,18 @@ export default function TicketDetailPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button className="cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-card">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectedUser(
+                ticket?.assignedTo?._id ?? ""
+              );
+
+              setShowAssignDialog(true);
+            }}
+          >
             Reassign
-          </button>
-          <button className="cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-card">
-            Add note
-          </button>
+          </Button>
           <button
             onClick={resolveTicket}
             disabled={ticket.status === "resolved"}
@@ -232,7 +237,7 @@ export default function TicketDetailPage() {
               <Badge
                 tone={
                   ticket.status === "resolved"
-                    ? "watch"
+                    ? "success"
                     : ticket.status === "closed"
                       ? "watch"
                       : "escalated"
@@ -396,58 +401,87 @@ export default function TicketDetailPage() {
                 </p>
               </div>
 
-              <button className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
+              <button
+                onClick={() => {
+                  commentRef.current?.focus();
+                }}
+                className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card"
+              >
                 Reply
               </button>
             </div>
 
             <div className="mt-5 space-y-4">
-              {comments.map((comment) => (
-                <div
-                  key={comment._id}
-                  className="rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
 
-                    <div className="flex items-center gap-3">
+              {comments.length === 0 ? (
 
-                      <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                        {comment.author.name
-                          .split(" ")
-                          .map((part) => part[0])
-                          .join("")
-                          .slice(0, 2)}
+                <div className="rounded-2xl border border-dashed border-border bg-background/20 p-8 text-center">
+
+                  <p className="text-sm font-medium text-foreground">
+                    No comments yet
+                  </p>
+
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Start the conversation by posting the first internal update.
+                  </p>
+
+                </div>
+
+              ) : (
+
+                comments.map((comment) => (
+
+                  <div
+                    key={comment._id}
+                    className="rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+
+                      <div className="flex items-center gap-3">
+
+                        <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                          {comment.author.name
+                            .split(" ")
+                            .map((part) => part[0])
+                            .join("")
+                            .slice(0, 2)}
+                        </div>
+
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {comment.author.name}
+                          </p>
+
+                          <p className="text-xs text-muted-foreground">
+                            {comment.author.email}
+                          </p>
+                        </div>
+
                       </div>
 
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {comment.author.name}
-                        </p>
-
-                        <p className="text-xs text-muted-foreground">
-                          {comment.author.email}
-                        </p>
-                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </p>
 
                     </div>
 
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(comment.createdAt).toLocaleString()}
+                    <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                      {comment.message}
                     </p>
 
                   </div>
 
-                  <p className="mt-4 text-sm leading-7 text-muted-foreground">
-                    {comment.message}
-                  </p>
+                ))
 
-                </div>
-              ))}
+              )}
+
             </div>
 
             {/* Comment composer */}
             <div className="mt-5 rounded-2xl border border-border bg-background/40 p-4">
               <textarea
+                ref={commentRef}
+                disabled={posting}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Add an internal update or reply to the requester..."
@@ -457,11 +491,9 @@ export default function TicketDetailPage() {
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-2">
-                  <button className="cursor-pointer inline-flex items-center gap-2 rounded-2xl border border-border bg-background/40 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
-                    <Paperclip className="size-4" />
-                    Attach
-                  </button>
-                  <button className="cursor-pointer inline-flex items-center gap-2 rounded-2xl border border-border bg-background/40 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
+                  <button
+                    disabled title="Coming Soon"
+                    className="cursor-pointer inline-flex items-center gap-2 rounded-2xl border border-border bg-background/40 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
                     <Bot className="size-4" />
                     AI draft
                   </button>
@@ -719,49 +751,81 @@ export default function TicketDetailPage() {
             </div>
           </div>
 
-          {/* Related tickets */}
-          <div className="rounded-3xl border border-border bg-card/30 p-5">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Related tickets
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Similar identity and access incidents
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {related.map((item) => (
-                <button
-                  key={item}
-                  className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-2xl border border-border bg-background/35 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/15 hover:bg-card"
-                >
-                  <span className="text-sm leading-6 text-foreground">{item}</span>
-                  <ArrowLeft className="mt-1 size-4 rotate-180 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Resolution checklist */}
-          <div className="rounded-3xl border border-border bg-card/30 p-5">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Resolution checklist
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Suggested next actions before closing
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <ChecklistItem label="Confirm VPN auth fix with finance team" done={false} />
-              <ChecklistItem label="Validate access to reporting environment" done={false} />
-              <ChecklistItem label="Capture root-cause note in internal timeline" done={true} />
-            </div>
-          </div>
         </div>
       </section>
+
+
+      {showAssignDialog && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm">
+
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6">
+
+            <h3 className="text-xl font-semibold">
+              Reassign Ticket
+            </h3>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Choose the user who should own this ticket.
+            </p>
+
+            <select
+              value={selectedUser}
+              onChange={(e) =>
+                setSelectedUser(e.target.value)
+              }
+              className="mt-6 w-full rounded-xl border border-border bg-background px-4 py-3"
+            >
+
+              <option value="">
+                Unassigned
+              </option>
+
+              {users.map((user) => (
+
+                <option
+                  key={user._id}
+                  value={user._id}
+                >
+                  {user.name}
+                </option>
+
+              ))}
+
+            </select>
+
+            <div className="mt-6 flex justify-end gap-3">
+
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setShowAssignDialog(false)
+                }
+              >
+                Cancel
+              </Button>
+
+              <Button
+                disabled={
+                  selectedUser ===
+                  (ticket.assignedTo?._id ?? "")
+                }
+                onClick={async () => {
+                  await assign(selectedUser);
+
+                  await refreshActivities();
+
+                  setShowAssignDialog(false);
+                }}
+              >
+                Save
+              </Button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }
@@ -847,34 +911,22 @@ function SlaRow({
   );
 }
 
-function ChecklistItem({
-  label,
-  done,
-}: {
-  label: string;
-  done: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/35 px-4 py-3">
-      <div
-        className={`grid size-5 place-items-center rounded-full border ${done
-          ? "border-[color:var(--success)]/30 bg-[color:var(--success)]/10 text-[color:var(--success)]"
-          : "border-border bg-background/50 text-muted-foreground"
-          }`}
-      >
-        {done ? <CheckCircle2 className="size-3.5" /> : <Clock3 className="size-3.5" />}
-      </div>
-      <span className="text-sm text-foreground">{label}</span>
-    </div>
-  );
-}
 
 function Badge({
   children,
   tone,
 }: {
   children: React.ReactNode;
-  tone: "critical" | "escalated" | "risk" | "watch";
+  tone:
+  "critical"
+  |
+  "escalated"
+  |
+  "risk"
+  |
+  "watch"
+  |
+  "success"
 }) {
   const styles =
     tone === "critical"
@@ -883,7 +935,9 @@ function Badge({
         ? "border-primary/20 bg-primary/10 text-primary"
         : tone === "risk"
           ? "border-primary/20 bg-primary/10 text-primary"
-          : "border-sky-500/20 bg-sky-500/10 text-sky-300";
+          : tone === "success"
+            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+            : "border-sky-500/20 bg-sky-500/10 text-sky-300";
 
   return (
     <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles}`}>

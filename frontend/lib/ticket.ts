@@ -256,3 +256,19 @@ export function deleteTicket(
     }
   );
 }
+
+export function assignTicket(
+  id: string,
+  assignedTo: string
+) {
+  return apiRequest<TicketResponse>(
+    `/api/tickets/${id}/assign`,
+    {
+      method: "PATCH",
+      token: token(),
+      body: {
+        assignedTo,
+      },
+    }
+  );
+}

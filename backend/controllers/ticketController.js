@@ -373,6 +373,55 @@ const updateTicketPriority = async (req, res) => {
   }
 };
 
+// ======================================
+// Assign Ticket
+// ======================================
+
+const assignTicket = async (req, res) => {
+  try {
+    const { assignedTo } = req.body;
+
+    const ticket = await Ticket.findById(req.params.id);
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: "Ticket not found.",
+      });
+    }
+
+    const previousAssignee = ticket.assignedTo;
+
+    ticket.assignedTo = assignedTo || null;
+
+    await ticket.save();
+
+    await ticket.populate("createdBy", "name email");
+    await ticket.populate("assignedTo", "name email");
+
+    await logActivity({
+      ticket: ticket._id,
+      user: req.user._id,
+      type: "assigned",
+      message: ticket.assignedTo
+        ? `Assigned ticket to ${ticket.assignedTo.name}`
+        : "Removed ticket assignment",
+    });
+
+    res.json({
+      success: true,
+      ticket,
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to assign ticket.",
+    });
+  }
+};
+
 
 // ======================================
 // Update Ticket
@@ -481,6 +530,7 @@ module.exports = {
   getTicketById,
   updateTicketStatus,
   updateTicketPriority,
+  assignTicket,
   updateTicket,
   deleteTicket,
 };
