@@ -7,7 +7,7 @@ const {
   addComment,
 } = require("../controllers/commentController");
 
-const { protect } = require("../middleware/authMiddleware");
+const protect = require("../middleware/authMiddleware");
 
 // ==========================
 // GET ALL COMMENTS

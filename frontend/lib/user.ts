@@ -15,12 +15,39 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: string;
+  role: "admin" | "agent" | "requester";
+
+  assignedTickets: number;
+  openTickets: number;
+  resolvedTickets: number;
 }
 
 interface UsersResponse {
   success: boolean;
   users: User[];
+}
+
+export interface AssignedTicket {
+  _id: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  category: string;
+
+  createdBy: {
+    name: string;
+  };
+
+  createdAt: string;
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  workspaceName: string;
+  password: string;
+  role: "admin" | "agent";
 }
 
 export function getUsers() {
@@ -30,4 +57,75 @@ export function getUsers() {
       token: token(),
     }
   );
+}
+
+export function getAgents() {
+  return apiRequest<UsersResponse>(
+    "/api/users/agents",
+    {
+      token: token(),
+    }
+  );
+}
+
+export function updateRole(
+  id: string,
+  role: User["role"]
+) {
+  return apiRequest<{
+    success: boolean;
+    user: User;
+  }>(
+    `/api/users/${id}/role`,
+    {
+      method: "PATCH",
+      token: token(),
+      body: {
+        role,
+      },
+    }
+  );
+}
+
+export function getAssignedTickets(
+  id: string
+) {
+  return apiRequest<{
+    success: boolean;
+    tickets: AssignedTicket[];
+  }>(
+    `/api/users/${id}/tickets`,
+    {
+      token: token(),
+    }
+  );
+}
+
+export function reassignTickets(
+  fromUserId: string,
+  toUserId: string
+) {
+  return apiRequest<{
+    success: boolean;
+    modified: number;
+  }>("/api/users/reassign", {
+    method: "PATCH",
+    token: token(),
+    body: {
+      fromUserId,
+      toUserId,
+    },
+  });
+}
+export function createUser(
+  data: CreateUserInput
+) {
+  return apiRequest<{
+    success: boolean;
+    user: User;
+  }>("/api/users", {
+    method: "POST",
+    token: token(),
+    body: data,
+  });
 }

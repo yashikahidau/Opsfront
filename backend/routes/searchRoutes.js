@@ -4,7 +4,7 @@ const router = express.Router();
 
 const Ticket = require("../models/Ticket");
 
-const { protect } = require("../middleware/authMiddleware");
+const protect = require("../middleware/authMiddleware");
 
 router.get(
   "/",

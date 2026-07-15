@@ -11,7 +11,7 @@ const {
   updateTicketPriority,
 } = require("../controllers/ticketController");
 
-const { protect } = require("../middleware/authMiddleware");
+const protect = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
