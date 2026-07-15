@@ -25,6 +25,19 @@ const createTicket = async (req, res) => {
       });
     }
 
+    const slaHours =
+  (priority || "medium") === "critical"
+    ? 4
+    : (priority || "medium") === "high"
+    ? 8
+    : (priority || "medium") === "medium"
+    ? 24
+    : 48;
+
+const slaDueAt = new Date(
+  Date.now() + slaHours * 60 * 60 * 1000
+);
+
     const ticket = await Ticket.create({
       title: title.trim(),
       description: description.trim(),
@@ -44,6 +57,10 @@ const createTicket = async (req, res) => {
           : [],
 
       createdBy: req.user._id,
+
+slaDueAt,
+
+slaStatus: "healthy",
     });
 
     await ticket.populate(
@@ -523,6 +540,7 @@ const deleteTicket = async (
     });
   }
 };
+
 
 module.exports = {
   createTicket,

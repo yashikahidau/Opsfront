@@ -71,9 +71,14 @@ const ticketSchema = new mongoose.Schema(
       max: 100,
     },
 
-    slaDeadline: {
+    slaDueAt: {
       type: Date,
-      default: null,
+    },
+
+    slaStatus: {
+      type: String,
+      enum: ["healthy", "warning", "breached"],
+      default: "healthy",
     },
 
     tags: [
