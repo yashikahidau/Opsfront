@@ -1,5 +1,7 @@
 const Ticket = require("../models/Ticket");
 const logActivity = require("../utils/logActivity");
+const SlaPolicy = require("../models/SlaPolicy");
+const parseDuration = require("../utils/parseDuration");
 
 // ======================================
 // Create Ticket
@@ -25,25 +27,35 @@ const createTicket = async (req, res) => {
       });
     }
 
-    const slaHours =
-  (priority || "medium") === "critical"
-    ? 4
-    : (priority || "medium") === "high"
-    ? 8
-    : (priority || "medium") === "medium"
-    ? 24
-    : 48;
+    const ticketPriority =
+  priority || "medium";
+
+const slaPolicy =
+  await SlaPolicy.findOne({
+    priority: ticketPriority,
+    status: "Active",
+  });
+
+if (!slaPolicy) {
+  return res.status(400).json({
+    success: false,
+    message:
+      "No active SLA policy found for this priority.",
+  });
+}
 
 const slaDueAt = new Date(
-  Date.now() + slaHours * 60 * 60 * 1000
+  Date.now() +
+    parseDuration(
+      slaPolicy.response
+    )
 );
 
     const ticket = await Ticket.create({
       title: title.trim(),
       description: description.trim(),
 
-      priority:
-        priority || "medium",
+      priority: ticketPriority,
 
       category:
         category || "support",

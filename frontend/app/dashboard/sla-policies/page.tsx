@@ -1,81 +1,50 @@
+"use client"
 import {
   AlertTriangle,
   ArrowUpRight,
-  CheckCircle2,
   ChevronRight,
   Clock3,
   Plus,
   ShieldAlert,
 } from "lucide-react";
-
-const policies = [
-  {
-    name: "P1 Critical",
-    response: "15m",
-    resolution: "2h",
-    escalation: "70%",
-    compliance: "91%",
-    status: "Active",
-    tone: "critical",
-  },
-  {
-    name: "P2 High",
-    response: "1h",
-    resolution: "8h",
-    escalation: "75%",
-    compliance: "96%",
-    status: "Active",
-    tone: "high",
-  },
-  {
-    name: "P3 Medium",
-    response: "4h",
-    resolution: "24h",
-    escalation: "85%",
-    compliance: "98%",
-    status: "Active",
-    tone: "medium",
-  },
-  {
-    name: "P4 Low",
-    response: "8h",
-    resolution: "48h",
-    escalation: "90%",
-    compliance: "99%",
-    status: "Active",
-    tone: "low",
-  },
-];
-
-const health = [
-  {
-    label: "Breached today",
-    value: "3",
-    tone: "destructive",
-    icon: ShieldAlert,
-  },
-  {
-    label: "At-risk tickets",
-    value: "12",
-    tone: "primary",
-    icon: AlertTriangle,
-  },
-  {
-    label: "Avg first response",
-    value: "42m",
-    tone: "success",
-    icon: Clock3,
-  },
-];
-
-const recommendations = [
-  "Tighten P1 reassignment window for access-related incidents.",
-  "Review whether P2 escalation should trigger slightly earlier during finance close periods.",
-  "P3 and P4 are healthy — no threshold change needed.",
-];
+import { useSlaPolicies } from "@/hooks/useSlaPolicies";
+import { SlaPolicy } from "@/lib/slaPolicies";
+import { exportPolicies } from "@/lib/slaPolicies";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useRouter } from "next/navigation";
+import EditPolicyDialog from "@/components/dashboard/sla/EditPolicyDialog";
+import { useState } from "react";
 
 export default function SlaPoliciesPage() {
+  const {
+    loading,
+    policies,
+    health,
+    recommendations,
+    refresh,
+    editPolicy,
+  } = useSlaPolicies();
+  const router = useRouter();
+
+  const [selectedPolicy, setSelectedPolicy] =
+    useState<SlaPolicy | null>(null);
+
+  const [editOpen, setEditOpen] =
+    useState(false);
+
+  if (loading) {
+    return (
+      <div className="flex h-[70vh] flex-col items-center justify-center gap-4">
+        <LoadingSpinner className="h-8 w-8 text-primary" />
+
+        <p className="text-sm text-muted-foreground">
+          Loading SLA Dashboard...
+        </p>
+      </div>
+    );
+  }
   return (
+
     <div className="space-y-7">
       {/* Header */}
       <section className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
@@ -93,13 +62,26 @@ export default function SlaPoliciesPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button className="cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-card">
-            Export policies
+          <button
+            onClick={async () => {
+              try {
+                await exportPolicies();
+              } catch (err) {
+                console.error(err);
+              }
+            }}
+            className="cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-card"
+          >
+            Export Policies
           </button>
-          <button className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95">
-            <Plus className="size-4" />
-            New policy
-          </button>
+          <button
+  disabled
+  title="Custom SLA policies will be available in a future update."
+  className="inline-flex cursor-not-allowed items-center gap-2 rounded-full bg-primary/60 px-5 py-2 text-sm font-medium text-primary-foreground opacity-60"
+>
+  <Plus className="size-4" />
+  New Policy
+</button>
         </div>
       </section>
 
@@ -115,8 +97,11 @@ export default function SlaPoliciesPage() {
               </p>
             </div>
 
-            <button className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
-              Edit defaults
+            <button
+              onClick={refresh}
+              className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card"
+            >
+              Refresh
             </button>
           </div>
 
@@ -133,7 +118,7 @@ export default function SlaPoliciesPage() {
           <div className="divide-y divide-border">
             {policies.map((policy) => (
               <div
-                key={policy.name}
+                key={policy._id}
                 className="px-5 py-5 transition-all duration-200 hover:bg-background/35 sm:px-6"
               >
                 {/* Desktop row */}
@@ -141,15 +126,14 @@ export default function SlaPoliciesPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${
-                          policy.tone === "critical"
-                            ? "bg-destructive/10 text-destructive"
-                            : policy.tone === "high"
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${policy.priority === "critical"
+                          ? "bg-destructive/10 text-destructive"
+                          : policy.priority === "high"
                             ? "bg-primary/10 text-primary"
-                            : policy.tone === "medium"
-                            ? "bg-[color:var(--warning)]/10 text-[color:var(--warning)]"
-                            : "bg-[color:var(--success)]/10 text-[color:var(--success)]"
-                        }`}
+                            : policy.priority === "medium"
+                              ? "bg-[color:var(--warning)]/10 text-[color:var(--warning)]"
+                              : "bg-[color:var(--success)]/10 text-[color:var(--success)]"
+                          }`}
                       >
                         {policy.name}
                       </span>
@@ -170,11 +154,16 @@ export default function SlaPoliciesPage() {
                     {policy.escalation}
                   </div>
                   <div className="font-mono text-sm text-foreground">
-                    {policy.compliance}
+                    {policy.compliance}%
                   </div>
 
                   <div className="flex justify-end">
-                    <button className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background/40 px-3.5 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
+                    <button
+                      onClick={() => {
+                        setSelectedPolicy(policy);
+                        setEditOpen(true);
+                      }}
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background/40 px-3.5 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
                       Edit
                       <ChevronRight className="size-4" />
                     </button>
@@ -187,15 +176,14 @@ export default function SlaPoliciesPage() {
                     <div>
                       <div className="flex flex-wrap items-center gap-3">
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${
-                            policy.tone === "critical"
-                              ? "bg-destructive/10 text-destructive"
-                              : policy.tone === "high"
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${policy.priority === "critical"
+                            ? "bg-destructive/10 text-destructive"
+                            : policy.priority === "high"
                               ? "bg-primary/10 text-primary"
-                              : policy.tone === "medium"
-                              ? "bg-[color:var(--warning)]/10 text-[color:var(--warning)]"
-                              : "bg-[color:var(--success)]/10 text-[color:var(--success)]"
-                          }`}
+                              : policy.priority === "medium"
+                                ? "bg-[color:var(--warning)]/10 text-[color:var(--warning)]"
+                                : "bg-[color:var(--success)]/10 text-[color:var(--success)]"
+                            }`}
                         >
                           {policy.name}
                         </span>
@@ -206,8 +194,14 @@ export default function SlaPoliciesPage() {
                       </div>
                     </div>
 
-                    <button className="w-fit cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
-                      Edit policy
+                    <button
+                      onClick={() => {
+                        setSelectedPolicy(policy);
+                        setEditOpen(true);
+                      }}
+                      className="w-fit cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card"
+                    >
+                      Edit Policy
                     </button>
                   </div>
 
@@ -215,7 +209,7 @@ export default function SlaPoliciesPage() {
                     <PolicyMetric label="First response" value={policy.response} />
                     <PolicyMetric label="Resolution" value={policy.resolution} />
                     <PolicyMetric label="Escalation" value={policy.escalation} />
-                    <PolicyMetric label="Compliance" value={policy.compliance} />
+                    <PolicyMetric label="Compliance" value={`${policy.compliance}%`} />
                   </div>
                 </div>
               </div>
@@ -268,32 +262,30 @@ export default function SlaPoliciesPage() {
             </div>
 
             <div className="mt-5 space-y-3">
-              {health.map((item) => {
-                const Icon = item.icon;
-                const valueClass =
-                  item.tone === "primary"
-                    ? "text-primary"
-                    : item.tone === "destructive"
-                    ? "text-destructive"
-                    : "text-[color:var(--success)]";
+              <div className="space-y-3">
 
-                return (
-                  <div
-                    key={item.label}
-                    className="flex items-center justify-between rounded-2xl border border-border bg-card/50 p-4 transition-all duration-200 hover:border-primary/10"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="grid size-9 place-items-center rounded-2xl border border-border bg-background/35 text-muted-foreground">
-                        <Icon className="size-4" />
-                      </div>
-                      <span className="text-sm text-foreground">{item.label}</span>
-                    </div>
-                    <span className={`font-mono text-lg font-semibold ${valueClass}`}>
-                      {item.value}
-                    </span>
-                  </div>
-                );
-              })}
+                <HealthCard
+                  icon={ShieldAlert}
+                  label="Breached Today"
+                  value={health?.breachedToday ?? 0}
+                  tone="destructive"
+                />
+
+                <HealthCard
+                  icon={AlertTriangle}
+                  label="At Risk"
+                  value={health?.atRisk ?? 0}
+                  tone="primary"
+                />
+
+                <HealthCard
+                  icon={Clock3}
+                  label="Avg Response"
+                  value={health?.avgFirstResponse ?? "-"}
+                  tone="success"
+                />
+
+              </div>
             </div>
           </div>
 
@@ -312,11 +304,31 @@ export default function SlaPoliciesPage() {
               {recommendations.map((item) => (
                 <button
                   key={item}
+                  onClick={() => {
+                    const text = item.toLowerCase();
+
+                    if (text.includes("breach")) {
+  router.push(
+    "/dashboard/queue?status=warning"
+  );
+  return;
+}
+
+                    if (text.includes("risk")) {
+                      router.push("/dashboard/queue");
+                      return;
+                    }
+
+                    router.push(
+  "/dashboard/analytics"
+);
+                  }}
                   className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-2xl border border-border bg-background/35 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/15 hover:bg-card"
                 >
                   <span className="text-sm leading-6 text-foreground">
                     {item}
                   </span>
+
                   <ArrowUpRight className="mt-1 size-4 text-muted-foreground" />
                 </button>
               ))}
@@ -324,6 +336,17 @@ export default function SlaPoliciesPage() {
           </div>
         </div>
       </section>
+
+      <EditPolicyDialog
+        open={editOpen}
+        policy={selectedPolicy}
+        onClose={() => {
+          setEditOpen(false);
+          setSelectedPolicy(null);
+        }}
+        onSave={editPolicy}
+      />
+
     </div>
   );
 }
@@ -355,19 +378,75 @@ function SettingRow({
   enabled: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-border bg-background/35 px-4 py-3 transition-all duration-200 hover:border-primary/10">
-      <span className="text-sm text-foreground">{label}</span>
+    <div
+      title="Workspace setting. Editable from the Settings page."
+      className="flex items-center justify-between rounded-2xl border border-border bg-background/35 px-4 py-3 opacity-80"
+    >
+      <span className="text-sm text-foreground">
+        {label}
+      </span>
+
       <div
-        className={`relative h-6 w-11 rounded-full transition-all ${
-          enabled ? "bg-primary" : "bg-muted"
+        className={`relative h-6 w-11 rounded-full ${
+          enabled
+            ? "bg-primary"
+            : "bg-muted"
         }`}
       >
         <div
-          className={`absolute top-1 size-4 rounded-full bg-white transition-all ${
-            enabled ? "left-6" : "left-1"
+          className={`absolute top-1 size-4 rounded-full bg-white ${
+            enabled
+              ? "left-6"
+              : "left-1"
           }`}
         />
       </div>
+    </div>
+  );
+}
+
+function HealthCard({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: any;
+  label: string;
+  value: string | number;
+  tone: "primary" | "destructive" | "success";
+}) {
+
+  const valueClass =
+    tone === "primary"
+      ? "text-primary"
+      : tone === "destructive"
+        ? "text-destructive"
+        : "text-[color:var(--success)]";
+
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-border bg-card/50 p-4 transition-all duration-200 hover:border-primary/10">
+
+      <div className="flex items-center gap-3">
+
+        <div className="grid size-9 place-items-center rounded-2xl border border-border bg-background/35 text-muted-foreground">
+
+          <Icon className="size-4" />
+
+        </div>
+
+        <span className="text-sm text-foreground">
+          {label}
+        </span>
+
+      </div>
+
+      <span
+        className={`font-mono text-lg font-semibold ${valueClass}`}
+      >
+        {value}
+      </span>
+
     </div>
   );
 }

@@ -1,4 +1,5 @@
 const Ticket = require("../models/Ticket");
+const calculateSlaStatus = require("../utils/calculateSlaStatus");
 
 const getQueue = async (req, res) => {
   try {
@@ -45,15 +46,7 @@ const getQueue = async (req, res) => {
       ];
     }
 
-    const tickets = await Ticket.find(query)
-      .populate(
-        "assignedTo",
-        "name email"
-      )
-      .populate(
-        "createdBy",
-        "name"
-      )
+
      const { sort = "newest" } = req.query;
 
 let sortQuery = {
@@ -82,6 +75,28 @@ switch (sort) {
     break;
 }
 
+
+    let tickets = await Ticket.find(query)
+  .populate(
+    "assignedTo",
+    "name email"
+  )
+  .populate(
+    "createdBy",
+    "name"
+  )
+  .sort(sortQuery);
+
+      tickets = tickets.map((ticket) => {
+  const status =
+    calculateSlaStatus(ticket);
+
+  return {
+    ...ticket.toObject(),
+    slaStatus: status,
+  };
+});
+    
     const stats = {
       total: tickets.length,
 
