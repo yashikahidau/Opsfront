@@ -15,6 +15,7 @@ const commentRoutes = require("./routes/commentRoutes");
 const activityRoutes = require("./routes/activityRoutes");
 const userRoutes = require("./routes/userRoutes");
 const queueRoutes = require("./routes/queueRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 // ===== middleware =====
 app.use(
@@ -45,7 +46,7 @@ app.use("/api/comments", commentRoutes);
 app.use("/api/activities", activityRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/queue",queueRoutes);
-
+app.use("/api/analytics",analyticsRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

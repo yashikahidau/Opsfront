@@ -1,3 +1,5 @@
+
+"use client";
 import {
   Activity,
   AlertTriangle,
@@ -9,97 +11,99 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-
-const topStats = [
-  {
-    label: "SLA compliance",
-    value: "96%",
-    hint: "Rolling 30 days",
-    tone: "success",
-    icon: CheckCircle2,
-  },
-  {
-    label: "At-risk tickets",
-    value: "12",
-    hint: "Live queue exposure",
-    tone: "primary",
-    icon: AlertTriangle,
-  },
-  {
-    label: "Median resolution",
-    value: "3h 42m",
-    hint: "Across resolved tickets",
-    tone: "default",
-    icon: Clock3,
-  },
-  {
-    label: "Escalation rate",
-    value: "8.4%",
-    hint: "Share of tickets escalated",
-    tone: "destructive",
-    icon: ShieldAlert,
-  },
-] as const;
-
-const queueBreakdown = [
-  { label: "Access Management", value: 34, tone: "bg-primary" },
-  { label: "Identity", value: 24, tone: "bg-sky-400" },
-  { label: "IT Ops", value: 18, tone: "bg-[color:var(--warning)]" },
-  { label: "Finance Systems", value: 14, tone: "bg-[color:var(--success)]" },
-  { label: "Workspace", value: 10, tone: "bg-muted-foreground/40" },
-];
-
-const riskTrend = [
-  { day: "Mon", value: 42 },
-  { day: "Tue", value: 51 },
-  { day: "Wed", value: 47 },
-  { day: "Thu", value: 64 },
-  { day: "Fri", value: 58 },
-  { day: "Sat", value: 36 },
-  { day: "Sun", value: 40 },
-];
-
-const agentLoad = [
-  { name: "D. Cho", open: 18, risk: 4, resolved: 26 },
-  { name: "M. Ali", open: 14, risk: 3, resolved: 22 },
-  { name: "J. Kim", open: 11, risk: 2, resolved: 19 },
-  { name: "S. Gupta", open: 9, risk: 1, resolved: 17 },
-];
-
-const slaPolicies = [
-  {
-    name: "P1 Critical",
-    response: "15m",
-    resolution: "2h",
-    compliance: "91%",
-  },
-  {
-    name: "P2 High",
-    response: "1h",
-    resolution: "8h",
-    compliance: "96%",
-  },
-  {
-    name: "P3 Medium",
-    response: "4h",
-    resolution: "24h",
-    compliance: "98%",
-  },
-  {
-    name: "P4 Low",
-    response: "8h",
-    resolution: "48h",
-    compliance: "99%",
-  },
-];
-
-const insights = [
-  "Access and identity queues are driving most of the current SLA exposure.",
-  "Unassigned tickets older than 20 minutes remain the biggest escalation trigger.",
-  "Finance-related requests have the highest average risk score this week.",
-];
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useEffect, useState } from "react";
+import { exportAnalytics } from "@/lib/analytics";
+import RiskTrendChart from "@/components/analytics/RiskTrendChart";
+import { useRouter } from "next/navigation";
 
 export default function AnalyticsPage() {
+
+  const {
+    loading,
+    stats,
+    riskTrend,
+    queueBreakdown,
+    agentLoad,
+    slaPolicies,
+    insights,
+    refresh,
+  } = useAnalytics();
+
+  const topStats = [
+    {
+      label: "Total Tickets",
+      value: stats?.total ?? 0,
+      hint: "Overall volume",
+      tone: "primary",
+      icon: Activity,
+      url: "/dashboard/tickets",
+    },
+    {
+      label: "Open",
+      value: stats?.open ?? 0,
+      hint: "Currently active",
+      tone: "primary",
+      icon: AlertTriangle,
+      url: "/dashboard/queue?status=open",
+    },
+    {
+      label: "Resolved",
+      value: stats?.resolved ?? 0,
+      hint: "Successfully completed",
+      tone: "success",
+      icon: CheckCircle2,
+      url: "/dashboard/queue?status=resolved",
+    },
+    {
+      label: "Critical",
+      value: stats?.critical ?? 0,
+      hint: "Need immediate action",
+      tone: "destructive",
+      icon: ShieldAlert,
+      url: "/dashboard/queue?priority=critical",
+    },
+    {
+      label: "SLA Compliance",
+      value: `${stats?.slaCompliance ?? 0}%`,
+      hint: "Tickets within SLA",
+      tone: "success",
+      icon: Clock3,
+      url: "/dashboard/queue",
+    },
+    {
+      label: "Escalation Rate",
+      value: `${stats?.escalationRate ?? 0}%`,
+      hint: "Critical ratio",
+      tone: "destructive",
+      icon: TrendingUp,
+      url: "/dashboard/queue",
+    },
+  ];
+
+  const [days, setDays] = useState(30);
+  const router = useRouter();
+
+  useEffect(() => {
+    refresh(days);
+
+    const interval = setInterval(() => {
+      refresh(days);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [days]);
+
+  if (loading) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center">
+        <p className="text-muted-foreground">
+          Loading analytics...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-7">
       {/* Header */}
@@ -118,11 +122,39 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button className="cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-card">
-            Last 30 days
-          </button>
-          <button className="cursor-pointer rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95">
+          <div className="flex items-center gap-2 rounded-full border border-border bg-background/40 p-1">
+
+            {[7, 30, 90].map((d) => (
+              <button
+                key={d}
+                onClick={() => setDays(d)}
+                className={`rounded-full px-4 py-2 text-sm transition-all ${days === d
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
+              >
+                {d} Days
+              </button>
+            ))}
+
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                await exportAnalytics();
+              } catch (err) {
+                console.error(err);
+              }
+            }}
+            className="cursor-pointer rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95">
             Export report
+          </button>
+          <button
+            onClick={() => refresh(days)}
+            disabled={loading}
+            className="cursor-pointer rounded-full border border-border bg-background/40 px-5 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </section>
@@ -136,24 +168,27 @@ export default function AnalyticsPage() {
             item.tone === "primary"
               ? "border-primary/20 bg-primary/[0.06]"
               : item.tone === "destructive"
-              ? "border-destructive/20 bg-destructive/[0.06]"
-              : item.tone === "success"
-              ? "border-[color:var(--success)]/20 bg-[color:var(--success)]/[0.06]"
-              : "border-border bg-card/40";
+                ? "border-destructive/20 bg-destructive/[0.06]"
+                : item.tone === "success"
+                  ? "border-[color:var(--success)]/20 bg-[color:var(--success)]/[0.06]"
+                  : "border-border bg-card/40";
 
           const iconClass =
             item.tone === "primary"
               ? "text-primary"
               : item.tone === "destructive"
-              ? "text-destructive"
-              : item.tone === "success"
-              ? "text-[color:var(--success)]"
-              : "text-foreground";
+                ? "text-destructive"
+                : item.tone === "success"
+                  ? "text-[color:var(--success)]"
+                  : "text-foreground";
 
           return (
             <div
               key={item.label}
-              className={`rounded-3xl border p-5 transition-all duration-200 hover:-translate-y-[2px] hover:border-primary/15 ${toneClass}`}
+              onClick={() =>
+                router.push(item.url)
+              }
+              className={`cursor-pointer rounded-3xl border p-5 transition-all duration-200 hover:-translate-y-[2px] hover:border-primary/20 ${toneClass}`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -185,33 +220,20 @@ export default function AnalyticsPage() {
                   Risk trend
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Average queue risk movement over the past 7 days
+                  Average queue risk movement over the past {days} days
                 </p>
               </div>
 
               <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                <TrendingUp className="size-3.5" />
-                +8% this week
+                <div className="size-2 rounded-full bg-primary animate-pulse" />
+                Live Data
               </span>
             </div>
 
-            <div className="mt-6 flex h-[280px] items-end justify-between gap-3">
-              {riskTrend.map((item) => (
-                <div
-                  key={item.day}
-                  className="flex flex-1 flex-col items-center gap-3"
-                >
-                  <div className="flex h-full w-full items-end">
-                    <div
-                      className="w-full rounded-t-xl bg-primary/85 transition-all duration-200 hover:bg-primary"
-                      style={{ height: `${item.value}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {item.day}
-                  </span>
-                </div>
-              ))}
+            <div className="mt-6 h-72">
+              <RiskTrendChart
+                data={riskTrend}
+              />
             </div>
           </div>
 
@@ -227,8 +249,11 @@ export default function AnalyticsPage() {
                 </p>
               </div>
 
-              <button className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
-                View team
+              <button
+                onClick={() => router.push("/dashboard/agents")}
+                className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card"
+              >
+                View Team
               </button>
             </div>
 
@@ -240,48 +265,56 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="divide-y divide-border">
-              {agentLoad.map((agent) => (
-                <div
-                  key={agent.name}
-                  className="grid gap-4 px-5 py-5 transition-all duration-200 hover:bg-background/35 md:grid-cols-[1.3fr_0.8fr_0.8fr_0.8fr] md:px-6"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {agent.name}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Support operations
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 md:block">
-                    <span className="text-xs text-muted-foreground md:hidden">
-                      Open:
-                    </span>
-                    <span className="font-mono text-sm text-foreground">
-                      {agent.open}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 md:block">
-                    <span className="text-xs text-muted-foreground md:hidden">
-                      At Risk:
-                    </span>
-                    <span className="font-mono text-sm text-primary">
-                      {agent.risk}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 md:block">
-                    <span className="text-xs text-muted-foreground md:hidden">
-                      Resolved:
-                    </span>
-                    <span className="font-mono text-sm text-[color:var(--success)]">
-                      {agent.resolved}
-                    </span>
-                  </div>
+              {agentLoad.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  No agents found.
                 </div>
-              ))}
+              ) : (
+                agentLoad.map((agent) => (
+                  <div
+                    key={agent.name}
+                    onClick={() => router.push("/dashboard/agents")}
+                    className="grid gap-4 px-5 py-5 transition-all duration-200 hover:bg-background/35 md:grid-cols-[1.3fr_0.8fr_0.8fr_0.8fr] md:px-6 cursor-pointer
+hover:border-primary/10"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {agent.name}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Support operations
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 md:block">
+                      <span className="text-xs text-muted-foreground md:hidden">
+                        Open:
+                      </span>
+                      <span className="font-mono text-sm text-foreground">
+                        {agent.open}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 md:block">
+                      <span className="text-xs text-muted-foreground md:hidden">
+                        At Risk:
+                      </span>
+                      <span className="font-mono text-sm text-primary">
+                        {agent.risk}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 md:block">
+                      <span className="text-xs text-muted-foreground md:hidden">
+                        Resolved:
+                      </span>
+                      <span className="font-mono text-sm text-[color:var(--success)]">
+                        {agent.resolved}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -297,8 +330,13 @@ export default function AnalyticsPage() {
                 </p>
               </div>
 
-              <button className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
-                Open policies
+              <button
+                onClick={() =>
+                  router.push("/dashboard/sla-policies")
+                }
+                className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card"
+              >
+                Open Policies
               </button>
             </div>
 
@@ -310,23 +348,34 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="divide-y divide-border">
-              {slaPolicies.map((policy) => (
-                <div
-                  key={policy.name}
-                  className="grid gap-4 px-5 py-5 transition-all duration-200 hover:bg-background/35 md:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr] md:px-6"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {policy.name}
-                    </p>
-                  </div>
-                  <div className="text-sm text-foreground">{policy.response}</div>
-                  <div className="text-sm text-foreground">{policy.resolution}</div>
-                  <div className="font-mono text-sm text-[color:var(--success)]">
-                    {policy.compliance}
-                  </div>
+              {slaPolicies.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  No SLA policies found.
                 </div>
-              ))}
+              ) : (
+
+                slaPolicies.map((policy) => (
+                  <div
+                    key={policy.name}
+                    onClick={() =>
+                      router.push("/dashboard/sla-policies")
+                    }
+                    className="grid gap-4 px-5 py-5 transition-all duration-200 hover:bg-background/35 md:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr] md:px-6 cursor-pointer
+hover:border-primary/10"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {policy.name}
+                      </p>
+                    </div>
+                    <div className="text-sm text-foreground">{policy.response}</div>
+                    <div className="text-sm text-foreground">{policy.resolution}</div>
+                    <div className="font-mono text-sm text-[color:var(--success)]">
+                      {policy.compliance}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -350,22 +399,42 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="mt-5 space-y-3">
-              {queueBreakdown.map((item) => (
-                <div key={item.label}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm text-foreground">{item.label}</span>
-                    <span className="font-mono text-sm text-muted-foreground">
-                      {item.value}%
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={`h-full rounded-full ${item.tone}`}
-                      style={{ width: `${item.value}%` }}
-                    />
-                  </div>
+              {queueBreakdown.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground">
+                  No ticket data available.
                 </div>
-              ))}
+              ) : (
+
+                queueBreakdown.map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/queue?category=${item.label}`
+                      )
+                    }
+                    className="w-full rounded-xl p-1 text-left transition-all duration-200 hover:scale-[1.01]"
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-sm text-foreground">{item.label}</span>
+                      <span className="font-mono text-sm text-muted-foreground">
+                        {item.value}
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full ${item.tone}`}
+                        style={{
+                          width: `${stats?.total
+                            ? (item.value / stats.total) * 100
+                            : 0
+                            }%`,
+                        }}
+                      />
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           </div>
 
@@ -386,9 +455,22 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="mt-5 space-y-3">
-              <SignalCard label="Critical tickets" value="3" tone="destructive" />
-              <SignalCard label="High-risk queue avg." value="74" tone="primary" />
-              <SignalCard label="Escalated in 24h" value="7" />
+              <SignalCard
+                label="Critical tickets"
+                value={String(stats?.critical ?? 0)}
+                tone="destructive"
+              />
+
+              <SignalCard
+                label="SLA Compliance"
+                value={`${stats?.slaCompliance ?? 0}%`}
+                tone="primary"
+              />
+
+              <SignalCard
+                label="Escalation Rate"
+                value={`${stats?.escalationRate ?? 0}%`}
+              />
             </div>
           </div>
 
@@ -409,9 +491,34 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <MiniMetric label="Active agents" value="14" />
-              <MiniMetric label="Avg open per agent" value="10.6" />
-              <MiniMetric label="Risk-owned tickets" value="12" />
+              <MiniMetric
+                label="Active agents"
+                value={String(agentLoad.length)}
+              />
+
+              <MiniMetric
+                label="Avg open per agent"
+                value={
+                  agentLoad.length
+                    ? (
+                      agentLoad.reduce(
+                        (sum, a) => sum + a.open,
+                        0
+                      ) / agentLoad.length
+                    ).toFixed(1)
+                    : "0"
+                }
+              />
+
+              <MiniMetric
+                label="Risk-owned tickets"
+                value={String(
+                  agentLoad.reduce(
+                    (sum, a) => sum + a.risk,
+                    0
+                  )
+                )}
+              />
             </div>
           </div>
 
@@ -427,17 +534,50 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="mt-5 space-y-3">
-              {insights.map((insight) => (
-                <button
-                  key={insight}
-                  className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-2xl border border-border bg-background/35 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/15 hover:bg-card"
-                >
-                  <span className="text-sm leading-6 text-foreground">
-                    {insight}
-                  </span>
-                  <ArrowUpRight className="mt-1 size-4 text-muted-foreground" />
-                </button>
-              ))}
+              {insights.length === 0 ? (
+                <div className="rounded-2xl border border-border bg-background/35 p-6 text-center text-muted-foreground">
+                  No insights available.
+                </div>
+              ) : (
+
+                insights.map((insight) => (
+                  <button
+                    key={insight}
+                    onClick={() => {
+                      const text = insight.toLowerCase();
+
+                      if (text.includes("critical")) {
+                        router.push("/dashboard/queue?priority=critical");
+                        return;
+                      }
+
+                      if (text.includes("waiting")) {
+                        router.push("/dashboard/queue?status=waiting");
+                        return;
+                      }
+
+                      if (text.includes("unassigned")) {
+                        router.push("/dashboard/queue?assignee=unassigned");
+                        return;
+                      }
+
+                      if (text.includes("sla")) {
+                        router.push("/dashboard/sla-policies");
+                        return;
+                      }
+
+                      router.push("/dashboard/queue");
+                    }}
+                    className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-2xl border border-border bg-background/35 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/15 hover:bg-card"
+                  >
+                    <span className="text-sm leading-6 text-foreground">
+                      {insight}
+                    </span>
+
+                    <ArrowUpRight className="mt-1 size-4 text-muted-foreground" />
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -459,8 +599,8 @@ function SignalCard({
     tone === "primary"
       ? "text-primary"
       : tone === "destructive"
-      ? "text-destructive"
-      : "text-foreground";
+        ? "text-destructive"
+        : "text-foreground";
 
   return (
     <div className="rounded-2xl border border-border bg-card/50 p-4 transition-all duration-200 hover:border-primary/10">
