@@ -1,3 +1,4 @@
+"use client";
 import {
   Bell,
   ChevronRight,
@@ -8,6 +9,10 @@ import {
   Sparkles,
   Workflow,
 } from "lucide-react";
+import { useSettings } from "@/hooks/useSettings";
+import { useState, useEffect, useMemo } from "react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { toast } from "sonner";
 
 const workspaceHealth = [
   { label: "Policies active", value: "4" },
@@ -22,6 +27,62 @@ const slaDefaults = [
 ];
 
 export default function SettingsPage() {
+  const {
+    loading,
+    saving,
+    settings,
+    saveSettings,
+  } = useSettings();
+
+  const [form, setForm] = useState({
+    workspaceName: "",
+    supportEmail: "",
+    primaryTeam: "",
+    timezone: "",
+    autoAssign: true,
+    autoEscalation: true,
+    queueFallback: "",
+    riskInterval: "",
+  });
+
+  useEffect(() => {
+    if (!settings) return;
+
+    setForm({
+      workspaceName: settings.workspaceName,
+      supportEmail: settings.supportEmail,
+      primaryTeam: settings.primaryTeam,
+      timezone: settings.timezone,
+      autoAssign: settings.automation.autoAssign,
+      autoEscalation: settings.automation.autoEscalation,
+      queueFallback: settings.automation.queueFallback,
+      riskInterval: settings.automation.riskInterval,
+    });
+  }, [settings]);
+
+  const hasChanges = useMemo(() => {
+    if (!settings) return false;
+
+    return (
+      form.workspaceName !== settings.workspaceName ||
+      form.supportEmail !== settings.supportEmail ||
+      form.primaryTeam !== settings.primaryTeam ||
+      form.timezone !== settings.timezone ||
+
+      form.autoAssign !== settings.automation.autoAssign ||
+      form.autoEscalation !== settings.automation.autoEscalation ||
+      form.queueFallback !== settings.automation.queueFallback ||
+      form.riskInterval !== settings.automation.riskInterval
+    );
+  }, [form, settings]);
+
+  if (loading) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center">
+        <LoadingSpinner className="h-8 w-8 text-primary" />
+      </div>
+    );
+  }
   return (
     <div className="space-y-7">
       {/* Header */}
@@ -39,9 +100,39 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <button className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95">
+        <button
+          onClick={async () => {
+            try {
+              await saveSettings({
+                workspaceName: form.workspaceName,
+                supportEmail: form.supportEmail,
+                primaryTeam: form.primaryTeam,
+                timezone: form.timezone,
+                automation: {
+                  autoAssign: form.autoAssign,
+                  autoEscalation: form.autoEscalation,
+                  queueFallback: form.queueFallback,
+                  riskInterval: form.riskInterval,
+                },
+              });
+
+              toast.success("Settings saved successfully.");
+            } catch {
+              toast.error("Failed to save settings.");
+            }
+          }}
+          disabled={saving || !hasChanges}
+          className={`inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 ${saving || !hasChanges
+            ? "cursor-not-allowed opacity-60"
+            : "cursor-pointer hover:-translate-y-0.5 hover:opacity-95"
+            }`}
+        >
           <Save className="size-4" />
-          Save changes
+          {saving
+            ? "Saving..."
+            : hasChanges
+              ? "Save changes"
+              : "Saved"}
         </button>
       </section>
 
@@ -66,10 +157,49 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Field label="Workspace name" value="Opsfront" />
-              <Field label="Support email" value="support@opsfront.app" />
-              <Field label="Primary team" value="Internal IT Operations" />
-              <Field label="Timezone" value="UTC +05:30" />
+              <Field
+                label="Workspace name"
+                value={form.workspaceName}
+                onChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    workspaceName: value,
+                  }))
+                }
+              />
+
+              <Field
+                label="Support email"
+                value={form.supportEmail}
+                onChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    supportEmail: value,
+                  }))
+                }
+              />
+
+              <Field
+                label="Primary team"
+                value={form.primaryTeam}
+                onChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    primaryTeam: value,
+                  }))
+                }
+              />
+
+              <Field
+                label="Timezone"
+                value={form.timezone}
+                onChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    timezone: value,
+                  }))
+                }
+              />
             </div>
           </div>
 
@@ -90,10 +220,65 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-5 space-y-3">
-              <ToggleRow label="Send escalation alerts to assigned agents" enabled />
-              <ToggleRow label="Notify leads when a ticket crosses risk threshold" enabled />
-              <ToggleRow label="Daily queue summary email" enabled={false} />
-              <ToggleRow label="Slack / Teams digest delivery" enabled />
+              {settings && (
+                <>
+                  <ToggleRow
+                    label="Send escalation alerts to assigned agents"
+                    enabled={settings.notifications.escalationAlerts}
+                    onToggle={() => {
+                      saveSettings({
+                        notifications: {
+                          ...settings.notifications,
+                          escalationAlerts:
+                            !settings.notifications.escalationAlerts,
+                        },
+                      });
+                    }}
+                  />
+
+                  <ToggleRow
+                    label="Notify leads when a ticket crosses risk threshold"
+                    enabled={settings.notifications.leadAlerts}
+                    onToggle={() => {
+                      saveSettings({
+                        notifications: {
+                          ...settings.notifications,
+                          leadAlerts:
+                            !settings.notifications.leadAlerts,
+                        },
+                      });
+                    }}
+                  />
+
+                  <ToggleRow
+                    label="Daily queue summary email"
+                    enabled={settings.notifications.dailySummary}
+                    onToggle={() => {
+                      saveSettings({
+                        notifications: {
+                          ...settings.notifications,
+                          dailySummary:
+                            !settings.notifications.dailySummary,
+                        },
+                      });
+                    }}
+                  />
+
+                  <ToggleRow
+                    label="Slack / Teams digest delivery"
+                    enabled={settings.notifications.slackDigest}
+                    onToggle={() => {
+                      saveSettings({
+                        notifications: {
+                          ...settings.notifications,
+                          slackDigest:
+                            !settings.notifications.slackDigest,
+                        },
+                      });
+                    }}
+                  />
+                </>
+              )}
             </div>
           </div>
 
@@ -113,12 +298,56 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <CompactInfo label="Auto-assign on intake" value="Enabled" />
-              <CompactInfo label="Risk recalculation interval" value="Every 10 min" />
-              <CompactInfo label="Auto-escalation" value="Enabled" />
-              <CompactInfo label="Default queue fallback" value="Ops triage" />
+            <div className="mt-5 space-y-5">
+              <div className="space-y-3">
+                <ToggleRow
+                  label="Auto assign incoming tickets"
+                  enabled={form.autoAssign}
+                  onToggle={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      autoAssign: !prev.autoAssign,
+                    }))
+                  }
+                />
+
+                <ToggleRow
+                  label="Auto escalate overdue tickets"
+                  enabled={form.autoEscalation}
+                  onToggle={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      autoEscalation: !prev.autoEscalation,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Risk recalculation interval"
+                  value={form.riskInterval}
+                  onChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      riskInterval: value,
+                    }))
+                  }
+                />
+
+                <Field
+                  label="Default queue fallback"
+                  value={form.queueFallback}
+                  onChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      queueFallback: value,
+                    }))
+                  }
+                />
+              </div>
             </div>
+
           </div>
 
           {/* Security */}
@@ -138,14 +367,63 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-5 space-y-3">
-              <ToggleRow label="Require two-factor authentication for admins" enabled />
-              <ToggleRow label="Allow SSO / Google sign-in" enabled />
-              <ToggleRow label="Session timeout after inactivity" enabled />
-            </div>
+              {settings && (
+                <>
+                  <ToggleRow
+                    label="Require two-factor authentication for admins"
+                    enabled={settings.security.twoFactor}
+                    onToggle={() => {
+                      saveSettings({
+                        security: {
+                          ...settings.security,
+                          twoFactor: !settings.security.twoFactor,
+                        },
+                      });
+                    }}
+                  />
 
+                  <ToggleRow
+                    label="Allow SSO / Google sign-in"
+                    enabled={settings.security.googleLogin}
+                    onToggle={() => {
+                      saveSettings({
+                        security: {
+                          ...settings.security,
+                          googleLogin: !settings.security.googleLogin,
+                        },
+                      });
+                    }}
+                  />
+
+                  <ToggleRow
+                    label="Session timeout after inactivity"
+                    enabled={settings.security.sessionTimeout}
+                    onToggle={() => {
+                      saveSettings({
+                        security: {
+                          ...settings.security,
+                          sessionTimeout: !settings.security.sessionTimeout,
+                        },
+                      });
+                    }}
+                  />
+                </>
+              )}
+            </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <CompactInfo label="Session timeout" value="30 minutes" />
-              <CompactInfo label="Admin role approval" value="Required" />
+              <CompactInfo
+                label="Session timeout"
+                value={
+                  settings?.security.sessionTimeout
+                    ? "30 minutes"
+                    : "Disabled"
+                }
+              />
+
+              <CompactInfo
+                label="Admin role approval"
+                value="Required"
+              />
             </div>
           </div>
         </div>
@@ -254,6 +532,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
+
     </div>
   );
 }
@@ -261,18 +540,23 @@ export default function SettingsPage() {
 function Field({
   label,
   value,
+  onChange,
 }: {
   label: string;
   value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <div className="rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10">
       <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
         {label}
       </p>
-      <div className="mt-3 rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-foreground">
-        {value}
-      </div>
+
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-3 w-full rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary"
+      />
     </div>
   );
 }
@@ -280,42 +564,64 @@ function Field({
 function CompactInfo({
   label,
   value,
+  editable = false,
+  onChange,
 }: {
   label: string;
   value: string;
+  editable?: boolean;
+  onChange?: (value: string) => void;
 }) {
   return (
     <div className="rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10">
       <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-2 text-sm font-medium text-foreground">{value}</p>
+
+      {editable ? (
+        <input
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
+          className="mt-2 w-full rounded-xl border border-border bg-card/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+        />
+      ) : (
+        <p className="mt-2 text-sm font-medium text-foreground">
+          {value}
+        </p>
+      )}
     </div>
   );
 }
 
+
 function ToggleRow({
   label,
   enabled,
+  onToggle,
 }: {
   label: string;
   enabled: boolean;
+  onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-border bg-background/35 px-4 py-3 transition-all duration-200 hover:border-primary/10">
-      <span className="pr-4 text-sm text-foreground">{label}</span>
+    <button
+      onClick={onToggle}
+      className="flex w-full items-center justify-between rounded-2xl border border-border bg-background/35 px-4 py-3 transition-all duration-200 hover:border-primary/10"
+    >
+      <span className="pr-4 text-left text-sm text-foreground">
+        {label}
+      </span>
+
       <div
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-all ${
-          enabled ? "bg-primary" : "bg-muted"
-        }`}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-all ${enabled ? "bg-primary" : "bg-muted"
+          }`}
       >
         <div
-          className={`absolute top-1 size-4 rounded-full bg-white transition-all ${
-            enabled ? "left-6" : "left-1"
-          }`}
+          className={`absolute top-1 size-4 rounded-full bg-white transition-all ${enabled ? "left-6" : "left-1"
+            }`}
         />
       </div>
-    </div>
+    </button>
   );
 }
 
