@@ -29,7 +29,20 @@ const protect = async (req, res, next) => {
       });
     }
 
-    req.user = user;
+    // Update last seen
+    user.lastSeen = new Date();
+    await user.save();
+
+    req.user = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      workspaceName: user.workspaceName,
+      role: user.role,
+      userType: user.userType,
+      isActive: user.isActive,
+    };
+
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);

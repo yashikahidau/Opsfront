@@ -32,15 +32,30 @@ const userSchema = new mongoose.Schema(
       minlength: [2, "Workspace name must be at least 2 characters"],
       maxlength: [60, "Workspace name must be at most 60 characters"],
     },
+    userType: {
+      type: String,
+      enum: ["internal", "customer"],
+      default: "customer",
+    },
+
     role: {
       type: String,
-      enum: ["admin", "agent"],
-      default: "admin",
+      enum: ["owner", "admin", "agent"],
+      default: null,
     },
     provider: {
       type: String,
       enum: ["local", "google"],
       default: "local",
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    lastSeen: {
+      type: Date,
+      default: null,
     },
 
     googleId: {

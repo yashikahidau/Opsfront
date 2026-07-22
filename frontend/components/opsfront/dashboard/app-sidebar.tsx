@@ -6,23 +6,41 @@ import {
   BarChart3,
   Clock3,
   LayoutDashboard,
-  PlusSquare,
   Settings,
   ShieldAlert,
   Ticket,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
-const navItems = [
+const ownerNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Tickets", href: "/dashboard/tickets", icon: Ticket },
-  { label: "Create Ticket", href: "/dashboard/create-ticket", icon: PlusSquare },
   { label: "Queue", href: "/dashboard/queue", icon: Clock3 },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { label: "Agents", href: "/dashboard/agents", icon: Users },
   { label: "SLA Policies", href: "/dashboard/sla-policies", icon: ShieldAlert },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
+];
+
+const adminNavItems = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Tickets", href: "/dashboard/tickets", icon: Ticket },
+  { label: "Queue", href: "/dashboard/queue", icon: Clock3 },
+  { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { label: "Agents", href: "/dashboard/agents", icon: Users },
+];
+
+const agentNavItems = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "My Tickets", href: "/dashboard/tickets", icon: Ticket },
+  { label: "Queue", href: "/dashboard/queue", icon: Clock3 },
+];
+
+const customerNavItems = [
+  { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+  { label: "My Tickets", href: "/dashboard/tickets", icon: Ticket },
 ];
 
 interface AppSidebarProps {
@@ -36,6 +54,16 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname();
 
+  const { user } = useAuth();
+
+  const navItems =
+    user?.userType === "customer"
+      ? customerNavItems
+      : user?.role === "owner"
+        ? ownerNavItems
+        : user?.role === "admin"
+          ? adminNavItems
+          : agentNavItems;
   return (
     <aside
       className={cn(
@@ -74,6 +102,7 @@ export function AppSidebar({
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
                 onClick={onClose}
                 className={cn(
                   "group flex items-center gap-3 rounded-2xl border px-3 py-3 text-sm transition-all duration-200",
@@ -98,18 +127,34 @@ export function AppSidebar({
       </div>
 
       <div className="border-t border-border p-4">
-        <div className="rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">Ops health</p>
-            <span className="rounded-full border border-[color:var(--success)]/20 bg-[color:var(--success)]/10 px-2 py-1 text-[10px] font-medium text-[color:var(--success)]">
-              Stable
-            </span>
-          </div>
-          <p className="text-sm leading-6 text-muted-foreground">
-            96% SLA compliance this week with 12 active risk-tracked tickets.
-          </p>
-        </div>
+  {user?.userType === "customer" ? (
+    <div className="rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
+      <p className="text-sm font-medium text-foreground">
+        Need assistance?
+      </p>
+
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        Raise a support ticket anytime and track its progress from your dashboard.
+      </p>
+    </div>
+  ) : (
+    <div className="rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-sm font-medium text-foreground">
+          Ops health
+        </p>
+
+        <span className="rounded-full border border-[color:var(--success)]/20 bg-[color:var(--success)]/10 px-2 py-1 text-[10px] font-medium text-[color:var(--success)]">
+          Stable
+        </span>
       </div>
+
+      <p className="text-sm leading-6 text-muted-foreground">
+        96% SLA compliance this week with 12 active risk-tracked tickets.
+      </p>
+    </div>
+  )}
+</div>
     </aside>
   );
 }

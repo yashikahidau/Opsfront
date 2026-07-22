@@ -4,6 +4,8 @@ const router = express.Router();
 
 const protect = require("../middleware/authMiddleware");
 
+const authorize = require("../middleware/authorize");
+
 const {
   getAgents,
   getUsers,
@@ -52,6 +54,7 @@ router.patch(
 router.post(
   "/",
   protect,
+  authorize("owner"),
   createAgent
 );
 

@@ -3,30 +3,32 @@ const Ticket = require("../models/Ticket");
 const bcrypt = require("bcryptjs");
 
 const getAgents = async (req, res) => {
-     try {
-          const users = await User.find({
-               role: "agent",
-          })
-               .select("name email role")
-               .sort({ name: 1 });
-          res.json({
-               success: true,
-               users,
-          });
-     } catch (err) {
-          console.error(err);
+  try {
+    const users = await User.find({
+      role: "agent",
+    })
+      .select("name email role")
+      .sort({ name: 1 });
+    res.json({
+      success: true,
+      users,
+    });
+  } catch (err) {
+    console.error(err);
 
-          res.status(500).json({
-               success: false,
-               message: "Unable to fetch users.",
-          });
-     }
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch users.",
+    });
+  }
 };
 
 const getUsers = async (req, res) => {
   try {
     const users = await User.find()
-      .select("name email role createdAt")
+      .select(
+        "name email role userType isActive workspaceName createdAt"
+      )
       .sort({ name: 1 });
 
     const result = await Promise.all(
@@ -81,9 +83,7 @@ const updateRole = async (req, res) => {
   try {
     const { role } = req.body;
 
-    if (
-      !["admin", "agent", "requester"].includes(role)
-    ) {
+    if (!["admin", "agent"].includes(role)) {
       return res.status(400).json({
         success: false,
         message: "Invalid role.",
@@ -183,19 +183,17 @@ const reassignTickets = async (req, res) => {
 const createAgent = async (req, res) => {
   try {
     const {
-      name,
-      email,
-      workspaceName,
-      password,
-      role,
-    } = req.body;
-
+  name,
+  email,
+  password,
+  role,
+} = req.body;
     if (
-      !name ||
-      !email ||
-      !workspaceName ||
-      !password
-    ) {
+  !name ||
+  !email ||
+  !password ||
+  !role
+){
       return res.status(400).json({
         success: false,
         message: "All fields are required.",
@@ -219,8 +217,10 @@ const createAgent = async (req, res) => {
     const user = await User.create({
       name,
       email,
-      workspaceName,
       password: hashedPassword,
+      workspaceName: req.user.workspaceName,
+userType: "internal",
+isActive: true,
       role,
     });
 
@@ -239,10 +239,10 @@ const createAgent = async (req, res) => {
 };
 
 module.exports = {
-     getAgents,
-     getUsers,
-     updateRole,
-     getAssignedTickets,
-     reassignTickets,
-      createAgent,
+  getAgents,
+  getUsers,
+  updateRole,
+  getAssignedTickets,
+  reassignTickets,
+  createAgent,
 };

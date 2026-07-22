@@ -28,28 +28,28 @@ const createTicket = async (req, res) => {
     }
 
     const ticketPriority =
-  priority || "medium";
+      priority || "medium";
 
-const slaPolicy =
-  await SlaPolicy.findOne({
-    priority: ticketPriority,
-    status: "Active",
-  });
+    const slaPolicy =
+      await SlaPolicy.findOne({
+        priority: ticketPriority,
+        status: "Active",
+      });
 
-if (!slaPolicy) {
-  return res.status(400).json({
-    success: false,
-    message:
-      "No active SLA policy found for this priority.",
-  });
-}
+    if (!slaPolicy) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No active SLA policy found for this priority.",
+      });
+    }
 
-const slaDueAt = new Date(
-  Date.now() +
-    parseDuration(
-      slaPolicy.response
-    )
-);
+    const slaDueAt = new Date(
+      Date.now() +
+      parseDuration(
+        slaPolicy.response
+      )
+    );
 
     const ticket = await Ticket.create({
       title: title.trim(),
@@ -61,18 +61,20 @@ const slaDueAt = new Date(
         category || "support",
 
       assignedTo:
-        assignedTo || null,
+        req.user.userType === "customer"
+          ? null
+          : assignedTo || null,
 
       tags:
         Array.isArray(tags)
           ? tags
           : [],
 
-      createdBy: req.user._id,
+      createdBy: req.user.id,
 
-slaDueAt,
+      slaDueAt,
 
-slaStatus: "healthy",
+      slaStatus: "healthy",
     });
 
     await ticket.populate(
@@ -122,6 +124,14 @@ const getTickets = async (req, res) => {
     } = req.query;
 
     const query = {};
+
+    // ================= RBAC =================
+
+    if (req.user.userType === "customer") {
+      query.createdBy = req.user.id;
+    } else if (req.user.role === "agent") {
+      query.assignedTo = req.user.id;
+    }
     if (search) {
       query.$or = [
         {
@@ -252,6 +262,33 @@ const getTicketById = async (
       });
     }
 
+    // ================= RBAC =================
+
+    if (req.user.userType === "customer") {
+      if (
+        ticket.createdBy._id.toString() !==
+        req.user.id.toString()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied.",
+        });
+      }
+    }
+
+    if (req.user.role === "agent") {
+      if (
+        !ticket.assignedTo ||
+        ticket.assignedTo._id.toString() !==
+        req.user.id.toString()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied.",
+        });
+      }
+    }
+
     return res.status(200).json({
       success: true,
       ticket,
@@ -302,6 +339,18 @@ const updateTicketStatus = async (req, res) => {
       });
     }
 
+    if (
+      req.user.role === "agent" &&
+      ticket.assignedTo?.toString() !==
+      req.user.id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only update your assigned tickets.",
+      });
+    }
+
+
     // Save previous status
     const previousStatus = ticket.status;
 
@@ -316,7 +365,7 @@ const updateTicketStatus = async (req, res) => {
     // Log activity
     await logActivity({
       ticket: ticket._id,
-      user: req.user._id,
+      user: req.user.id,
       type: "status",
       message: `Changed status from "${previousStatus}" to "${status}"`,
     });
@@ -365,6 +414,17 @@ const updateTicketPriority = async (req, res) => {
       });
     }
 
+    if (
+  req.user.role === "agent" &&
+  ticket.assignedTo?.toString() !==
+    req.user.id.toString()
+) {
+  return res.status(403).json({
+    success: false,
+    message: "You cannot change ticket priority.",
+  });
+}
+
     const previousPriority = ticket.priority;
 
     ticket.priority = priority;
@@ -383,7 +443,7 @@ const updateTicketPriority = async (req, res) => {
 
     await logActivity({
       ticket: ticket._id,
-      user: req.user._id,
+      user: req.user.id,
       type: "priority",
       message: `Changed priority from "${previousPriority}" to "${priority}"`,
     });
@@ -430,7 +490,7 @@ const assignTicket = async (req, res) => {
 
     await logActivity({
       ticket: ticket._id,
-      user: req.user._id,
+      user: req.user.id,
       type: "assigned",
       message: ticket.assignedTo
         ? `Assigned ticket to ${ticket.assignedTo.name}`
@@ -472,6 +532,17 @@ const updateTicket = async (
         success: false,
         message:
           "Ticket not found.",
+      });
+    }
+
+    if (
+      req.user.role === "agent" &&
+      ticket.assignedTo?.toString() !==
+      req.user.id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only edit your assigned tickets.",
       });
     }
 

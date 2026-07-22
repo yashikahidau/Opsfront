@@ -7,6 +7,14 @@ const Ticket = require("../models/Ticket");
 
 const getDashboardOverview = async (req, res) => {
   try {
+
+    const ticketFilter =
+      req.user.userType === "customer"
+        ? { createdBy: req.user.id }
+        : req.user.role === "agent"
+          ? { assignedTo: req.user.id }
+          : {};
+
     const [
       totalTickets,
       openTickets,
@@ -16,36 +24,45 @@ const getDashboardOverview = async (req, res) => {
       criticalTickets,
       highRiskTickets,
     ] = await Promise.all([
-      Ticket.countDocuments(),
+
+      Ticket.countDocuments(ticketFilter),
 
       Ticket.countDocuments({
+        ...ticketFilter,
         status: "open",
       }),
 
       Ticket.countDocuments({
+        ...ticketFilter,
         status: "in-progress",
       }),
 
       Ticket.countDocuments({
+        ...ticketFilter,
         status: "waiting",
       }),
 
       Ticket.countDocuments({
+        ...ticketFilter,
         status: "resolved",
       }),
 
       Ticket.countDocuments({
+        ...ticketFilter,
         priority: "critical",
       }),
 
       Ticket.countDocuments({
+        ...ticketFilter,
         riskScore: {
           $gte: 70,
         },
       }),
     ]);
 
-    const latestTickets = await Ticket.find()
+    const latestTickets = await Ticket.find(
+      ticketFilter
+    )
       .populate("createdBy", "name email")
       .populate("assignedTo", "name email")
       .sort({
@@ -57,9 +74,9 @@ const getDashboardOverview = async (req, res) => {
       totalTickets === 0
         ? 100
         : Math.round(
-            (resolvedTickets / totalTickets) *
-              100
-          );
+          (resolvedTickets / totalTickets) *
+          100
+        );
 
     return res.status(200).json({
       success: true,

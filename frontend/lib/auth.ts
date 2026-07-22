@@ -3,7 +3,13 @@ export type AuthUser = {
   name: string;
   email: string;
   workspaceName: string;
-  role: "admin" | "agent";
+
+  userType: "internal" | "customer";
+
+  role: "owner" | "admin" | "agent" | null;
+
+  isActive: boolean;
+
   createdAt: string;
   updatedAt: string;
 };

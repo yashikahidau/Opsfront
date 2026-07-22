@@ -6,10 +6,18 @@ const sendResetEmail = require("../utils/sendResetEmail");
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
+const generateToken = (user) => {
+  return jwt.sign(
+    {
+      userId: user._id,
+      role: user.role,
+      userType: user.userType,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    }
+  );
 };
 
 const sanitizeUser = (user) => ({
@@ -17,7 +25,10 @@ const sanitizeUser = (user) => ({
   name: user.name,
   email: user.email,
   workspaceName: user.workspaceName,
+  userType: user.userType,
   role: user.role,
+  isActive: user.isActive,
+  lastSeen: user.lastSeen,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });
@@ -82,15 +93,22 @@ const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+
+    const userCount = await User.countDocuments();
+    const isFirstUser = userCount === 0;
     const user = await User.create({
       name: trimmedName,
       email: trimmedEmail,
       password: hashedPassword,
       workspaceName: trimmedWorkspace,
-      role: "admin",
+
+      userType: isFirstUser ? "internal" : "customer",
+      role: isFirstUser ? "owner" : null,
+
+      isActive: true,
     });
 
-    const token = generateToken(user._id);
+    const token = generateToken(user);
 
     return res.status(201).json({
       success: true,
@@ -155,7 +173,10 @@ const loginUser = async (req, res) => {
       });
     }
 
-    const token = generateToken(user._id);
+    user.lastSeen = new Date();
+    await user.save();
+
+    const token = generateToken(user);
 
     return res.status(200).json({
       success: true,
@@ -236,7 +257,7 @@ const forgotPassword = async (req, res) => {
       Date.now() + 15 * 60 * 1000;
 
     await user.save();
-        const resetLink =
+    const resetLink =
       `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
     await sendResetEmail(
@@ -315,7 +336,7 @@ const resetPassword = async (req, res) => {
       password,
       salt
     );
-        user.passwordResetToken = null;
+    user.passwordResetToken = null;
 
     user.passwordResetExpires = null;
 

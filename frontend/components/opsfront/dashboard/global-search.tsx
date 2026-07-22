@@ -19,6 +19,7 @@ import { searchWorkspace } from "@/lib/search";
 
 import type { Ticket } from "@/lib/ticket";
 
+import { useAuth } from "@/context/AuthContext";
 
 interface GlobalSearchProps {
      value: string;
@@ -46,6 +47,15 @@ export default function GlobalSearch({
           useRef<HTMLDivElement>(null);
 
      const router = useRouter();
+
+     const { user } = useAuth();
+
+const placeholder =
+  user?.userType === "customer"
+    ? "Search my tickets..."
+    : user?.role === "agent"
+      ? "Search assigned tickets..."
+      : "Search tickets, agents, or requesters...";
 
      useEffect(() => {
           if (!value.trim()) {
@@ -165,7 +175,7 @@ export default function GlobalSearch({
                               setSelectedIndex(-1);
                          }
                     }}
-                    placeholder="Search tickets, agents, or requesters..."
+                    placeholder={placeholder}
                     className="h-11 w-full rounded-2xl border border-border bg-card/50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/20"
                />
 

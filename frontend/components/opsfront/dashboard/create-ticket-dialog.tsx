@@ -10,6 +10,7 @@ import FormInput from "@/components/form/FormInput";
 import FormAlert from "@/components/form/FormAlert";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { createTicket } from "@/lib/ticket";
+import { useAuth } from "@/context/AuthContext";
 
 interface CreateTicketDialogProps {
   onCreated?: () => void;
@@ -18,6 +19,10 @@ interface CreateTicketDialogProps {
 export default function CreateTicketDialog({
   onCreated,
 }: CreateTicketDialogProps) {
+
+  const { user } = useAuth();
+
+  const isCustomer = user?.userType === "customer";
 
   const [open, setOpen] = useState(false);
 
@@ -36,17 +41,17 @@ export default function CreateTicketDialog({
   const [category, setCategory] =
     useState("support");
 
-    useEffect(() => {
-  if (open) {
-    document.body.style.overflow = "hidden";
-  } else {
-    document.body.style.overflow = "";
-  }
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
 
-  return () => {
-    document.body.style.overflow = "";
-  };
-}, [open]);
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   async function handleCreate(
     e: React.FormEvent
@@ -78,12 +83,12 @@ export default function CreateTicketDialog({
       });
 
       toast.success(
-      "Ticket created successfully.",
-      {
-        description:
-          "Your support request has been added to the queue.",
-     }
-     );
+        "Ticket created successfully.",
+        {
+          description:
+            "Your support request has been added to the queue.",
+        }
+      );
 
       setTitle("");
 
@@ -113,22 +118,29 @@ export default function CreateTicketDialog({
         onClick={() => setOpen(true)}
       >
         <Plus className="mr-2 size-4" />
-        New Ticket
+        {isCustomer ? "New Support Request" : "Create Ticket"}
       </Button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-
-          <div className="w-full max-w-2xl rounded-3xl border border-border bg-card p-8">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-3xl border border-border bg-card p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
 
             <div className="mb-8">
 
               <h2 className="text-2xl font-semibold">
-                Create Ticket
+                {isCustomer ? "New Support Request" : "Create Ticket"}
               </h2>
 
               <p className="mt-2 text-sm text-muted-foreground">
-                Create a new support request.
+                {isCustomer
+                  ? "Tell us what's wrong and our support team will help you."
+                  : "Create a new support request."}
               </p>
 
             </div>
@@ -137,143 +149,152 @@ export default function CreateTicketDialog({
               onSubmit={handleCreate}
               className="space-y-5"
             >
-          <FormInput
-  label="Title"
-  placeholder="Brief ticket title"
-  value={title}
-  onChange={(e) =>
-    setTitle(e.target.value)
-  }
-  onFocus={() => setError("")}
-/>
+              <FormInput
+                label="Title"
+                placeholder="Brief ticket title"
+                value={title}
+                onChange={(e) =>
+                  setTitle(e.target.value)
+                }
+                onFocus={() => setError("")}
+              />
 
-<FormInput
-  label="Description"
-  placeholder="Describe the issue..."
-  value={description}
-  onChange={(e) =>
-    setDescription(e.target.value)
-  }
-  onFocus={() => setError("")}
-/>
+              <FormInput
+                label="Description"
+                placeholder="Describe the issue..."
+                value={description}
+                onChange={(e) =>
+                  setDescription(e.target.value)
+                }
+                onFocus={() => setError("")}
+              />
 
-<div className="grid grid-cols-2 gap-4">
+              <div
+                className={`grid gap-4 ${isCustomer ? "grid-cols-1" : "grid-cols-2"
+                  }`}
+              >
 
-  <div>
 
-    <label className="mb-2 block text-sm font-medium">
-      Priority
-    </label>
 
-    <select
-      value={priority}
-      onChange={(e) =>
-        setPriority(e.target.value)
-      }
-      className="h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
-    >
-      <option value="low">
-        Low
-      </option>
+                <div>
 
-      <option value="medium">
-        Medium
-      </option>
+                  <label className="mb-2 block text-sm font-medium">
+                    Category
+                  </label>
 
-      <option value="high">
-        High
-      </option>
+                  <select
+                    value={category}
+                    onChange={(e) =>
+                      setCategory(e.target.value)
+                    }
+                    className="h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
+                  >
+                    <option value="support">
+                      Support
+                    </option>
 
-      <option value="critical">
-        Critical
-      </option>
+                    <option value="bug">
+                      Bug
+                    </option>
 
-    </select>
+                    <option value="feature">
+                      Feature
+                    </option>
 
-  </div>
+                    <option value="billing">
+                      Billing
+                    </option>
 
-  <div>
+                    <option value="other">
+                      Other
+                    </option>
 
-    <label className="mb-2 block text-sm font-medium">
-      Category
-    </label>
+                  </select>
 
-    <select
-      value={category}
-      onChange={(e) =>
-        setCategory(e.target.value)
-      }
-      className="h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
-    >
-      <option value="support">
-        Support
-      </option>
+                </div>
 
-      <option value="bug">
-        Bug
-      </option>
+                {!isCustomer && (
+                  <div>
 
-      <option value="feature">
-        Feature
-      </option>
+                    <label className="mb-2 block text-sm font-medium">
+                      Priority
+                    </label>
 
-      <option value="billing">
-        Billing
-      </option>
+                    <select
+                      value={priority}
+                      onChange={(e) =>
+                        setPriority(e.target.value)
+                      }
+                      className="h-12 w-full rounded-2xl border border-border bg-background px-4 outline-none transition focus:border-primary"
+                    >
+                      <option value="low">
+                        Low
+                      </option>
 
-      <option value="other">
-        Other
-      </option>
+                      <option value="medium">
+                        Medium
+                      </option>
 
-    </select>
+                      <option value="high">
+                        High
+                      </option>
 
-  </div>
+                      <option value="critical">
+                        Critical
+                      </option>
 
-</div>
+                    </select>
 
-{error && (
-  <FormAlert variant="error">
-    {error}
-  </FormAlert>
-)}
+                  </div>
+                )}
 
-<div className="flex justify-end gap-3 pt-4">
+              </div>
 
-  <Button
-    type="button"
-    variant="outline"
-    onClick={() =>
-      setOpen(false)
-    }
-    disabled={loading}
-  >
-    Cancel
-  </Button>
+              {error && (
+                <FormAlert variant="error">
+                  {error}
+                </FormAlert>
+              )}
 
-  <Button
-    type="submit"
-    disabled={loading}
-  >
-    {loading ? (
-      <>
-        <LoadingSpinner className="mr-2" />
-        Creating...
-      </>
-    ) : (
-      "Create Ticket"
-    )}
-  </Button>
+              <div className="flex justify-end gap-3 pt-4">
 
-</div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setOpen(false)
+                  }
+                  disabled={loading}
+                >
+                  Cancel
+                </Button>
 
-</form>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <LoadingSpinner className="mr-2" />
+                      Creating...
+                    </>
+                  ) : (
+                    isCustomer
+                      ? "Submit Request"
+                      : "Create Ticket"
+                  )}
+                </Button>
 
-</div>
+              </div>
 
-</div>
+            </form>
 
-)}
+          </div>
 
-</>
-);
+        </div>
+
+      )}
+
+    </>
+  );
 }

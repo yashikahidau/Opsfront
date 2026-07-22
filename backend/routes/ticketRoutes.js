@@ -1,3 +1,4 @@
+const authorize = require("../middleware/authorize");
 const express = require("express");
 
 const {
@@ -19,7 +20,11 @@ const router = express.Router();
 router.use(protect);
 
 // Create Ticket
-router.post("/", createTicket);
+router.post(
+  "/",
+  authorize("owner", "admin", "agent", "customer"),
+  createTicket
+);
 
 // Get All Tickets
 router.get("/", getTickets);
@@ -28,20 +33,39 @@ router.get("/", getTickets);
 router.get("/:id", getTicketById);
 
 // Update Ticket
-router.patch("/:id", updateTicket);
+router.patch(
+  "/:id",
+  authorize("owner", "admin", "agent"),
+  updateTicket
+);
 
 // Delete Ticket
-router.delete("/:id", deleteTicket);
+router.delete(
+  "/:id",
+  authorize("owner"),
+  deleteTicket
+);
 
 //Update Ticket Status
-router.patch("/:id/status",protect,updateTicketStatus
+router.patch(
+  "/:id/status",
+  authorize("owner", "admin", "agent"),
+  updateTicketStatus
 );
 
 //Update Ticket Priority
-router.patch("/:id/priority",protect,updateTicketPriority);
+router.patch(
+  "/:id/priority",
+  authorize("owner", "admin"),
+  updateTicketPriority
+);
 
 
 //assign ticket
-router.patch("/:id/assign",protect,assignTicket);
+router.patch(
+  "/:id/assign",
+  authorize("owner", "admin"),
+  assignTicket
+);
 
 module.exports = router;

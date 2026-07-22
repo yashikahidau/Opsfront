@@ -26,6 +26,15 @@ interface TicketsTableProps {
     totalTickets: number;
     totalPages: number;
   };
+
+  isCustomer: boolean;
+}
+
+function formatDate(date: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+  }).format(new Date(date));
 }
 
 export default function TicketsTable({
@@ -33,18 +42,35 @@ export default function TicketsTable({
   page,
   setPage,
   pagination,
+  isCustomer,
 }: TicketsTableProps) {
   return (
     <section className="overflow-hidden rounded-3xl border border-border bg-card/30">
       {/* Desktop header */}
-      <div className="hidden grid-cols-[0.9fr_2.2fr_1.2fr_0.95fr_0.95fr_1fr_0.9fr] gap-4 border-b border-border px-6 py-4 text-[11px] uppercase tracking-[0.24em] text-muted-foreground lg:grid">
+      <div
+        className={`hidden gap-4 border-b border-border px-6 py-4 text-[11px] uppercase tracking-[0.24em] text-muted-foreground lg:grid ${isCustomer
+          ? "grid-cols-[1fr_3fr_1.1fr_1.1fr]"
+          : "grid-cols-[0.9fr_2.2fr_1.2fr_0.95fr_0.95fr_1fr_0.9fr]"
+          }`}
+      >
         <div>Ticket</div>
+
         <div>Issue</div>
-        <div>Requester / Assignee</div>
-        <div>Priority</div>
-        <div>Status</div>
-        <div>SLA</div>
-        <div>Risk</div>
+
+        {isCustomer ? (
+          <>
+            <div>Created</div>
+            <div>Status</div>
+          </>
+        ) : (
+          <>
+            <div>Requester / Assignee</div>
+            <div>Priority</div>
+            <div>Status</div>
+            <div>SLA</div>
+            <div>Risk</div>
+          </>
+        )}
       </div>
       <div className="divide-y divide-border">
         {tickets.length === 0 ? (
@@ -52,11 +78,15 @@ export default function TicketsTable({
             <Search className="mb-4 h-10 w-10 text-muted-foreground" />
 
             <h3 className="text-lg font-semibold text-foreground">
-              No matching tickets
+              {isCustomer
+  ? "No support tickets yet"
+  : "No matching tickets"}
             </h3>
 
             <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Try another keyword or clear your filters to see all tickets.
+             {isCustomer
+  ? "Create your first support ticket to get help from our team."
+  : "Try another keyword or clear your filters to see all tickets."}
             </p>
           </div>
         ) : (
@@ -67,75 +97,104 @@ export default function TicketsTable({
               className="block cursor-pointer transition-all duration-200 hover:bg-background/35"
             >
               {/* Desktop row */}
-              <div className="hidden grid-cols-[0.9fr_2.2fr_1.2fr_0.95fr_0.95fr_1fr_0.9fr] gap-4 px-6 py-5 lg:grid">
-                <div>
-                  <p className="font-mono text-sm font-medium text-primary">
-                    #{ticket._id.slice(-6).toUpperCase()}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {ticket.category.charAt(0).toUpperCase() +
-                      ticket.category.slice(1)}
-                  </p>
-                </div>
+              <div
+                className={`hidden gap-4 px-6 py-5 lg:grid ${isCustomer
+                    ? "grid-cols-[1fr_3fr_1.1fr_1.1fr]"
+                    : "grid-cols-[0.9fr_2.2fr_1.2fr_0.95fr_0.95fr_1fr_0.9fr]"
+                  }`}
+              >
 
                 <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {ticket.title}
-                  </p>
-                </div>
+  <p className="font-mono text-sm font-medium text-primary">
+    #{ticket._id.slice(-6).toUpperCase()}
+  </p>
 
-                <div>
-                  <p className="text-sm text-foreground">{ticket.createdBy.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {ticket.assignedTo
-                      ? ticket.assignedTo.name
-                      : "Unassigned"}
-                  </p>
-                </div>
+  <p className="mt-1 text-xs text-muted-foreground">
+    {ticket.category.charAt(0).toUpperCase() +
+      ticket.category.slice(1)}
+  </p>
+</div>
 
-                <div className="flex items-start">
-                  <PriorityBadge
-                    priority={
-                      ticket.priority.charAt(0).toUpperCase() +
-                      ticket.priority.slice(1)
-                    }
-                  />
-                </div>
+<div>
+  <p className="text-sm font-medium text-foreground">
+    {ticket.title}
+  </p>
+</div>
+                {isCustomer ? (
+                  <>
+                    <div>
+                      <p className="text-sm text-foreground">
+                        {formatDate(ticket.createdAt)}
+                      </p>
+                    </div>
 
-                <div className="flex items-start">
-                  <StatusBadge
-                    status={
-                      ticket.status
-                        .replace("-", " ")
-                        .replace(/\b\w/g, (c: string) =>
-                          c.toUpperCase()
-                        )
-                    }
-                  />
-                </div>
+                    <div className="flex items-start">
+                      <StatusBadge
+                        status={ticket.status
+                          .replace("-", " ")
+                          .replace(/\b\w/g, (c: string) =>
+                            c.toUpperCase()
+                          )}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-sm text-foreground">
+                        {ticket.createdBy?.name ?? "Unknown User"}
+                      </p>
 
-                <div>
-                  <p className="text-sm text-foreground">{ticket.slaDeadline
-                    ? new Date(
-                      ticket.slaDeadline
-                    ).toLocaleString()
-                    : "No SLA"}</p>
-                </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {ticket.assignedTo
+                          ? ticket.assignedTo.name
+                          : "Unassigned"}
+                      </p>
+                    </div>
 
-                <div className="flex items-start">
-                  <RiskBadge
-                    tone={
-                      ticket.riskScore >= 90
-                        ? "overdue"
-                        : ticket.riskScore >= 70
-                          ? "risk"
-                          : ticket.riskScore >= 40
-                            ? "watch"
-                            : "safe"
-                    }
-                    label={`${ticket.riskScore}%`}
-                  />
-                </div>
+                    <div className="flex items-start">
+                      <PriorityBadge
+                        priority={
+                          ticket.priority.charAt(0).toUpperCase() +
+                          ticket.priority.slice(1)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-start">
+                      <StatusBadge
+                        status={ticket.status
+                          .replace("-", " ")
+                          .replace(/\b\w/g, (c: string) =>
+                            c.toUpperCase()
+                          )}
+                      />
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-foreground">
+                        {ticket.slaDeadline
+                          ? formatDate(ticket.slaDeadline)
+                          : "No SLA"}
+                      </p>
+                    </div>
+
+                    <div className="flex items-start">
+                      <RiskBadge
+                        tone={
+                          ticket.riskScore >= 90
+                            ? "overdue"
+                            : ticket.riskScore >= 70
+                              ? "risk"
+                              : ticket.riskScore >= 40
+                                ? "watch"
+                                : "safe"
+                        }
+                        label={`${ticket.riskScore}%`}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Mobile / tablet */}
@@ -154,76 +213,124 @@ export default function TicketsTable({
                     </p>
                   </div>
 
-                  <div className="shrink-0">
-                    <RiskBadge
-                      tone={
-                        ticket.riskScore >= 90
-                          ? "overdue"
-                          : ticket.riskScore >= 70
-                            ? "risk"
-                            : ticket.riskScore >= 40
-                              ? "watch"
-                              : "safe"
-                      }
-                      label={`${ticket.riskScore}%`}
-                    />
-                  </div>
+                  {!isCustomer && (
+  <div className="shrink-0">
+    <RiskBadge
+      tone={
+        ticket.riskScore >= 90
+          ? "overdue"
+          : ticket.riskScore >= 70
+          ? "risk"
+          : ticket.riskScore >= 40
+          ? "watch"
+          : "safe"
+      }
+      label={`${ticket.riskScore}%`}
+    />
+  </div>
+)}
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Requester
-                    </p>
-                    <p className="mt-1 text-sm text-foreground">{ticket.createdBy.name}</p>
-                  </div>
+               <div
+  className={`grid gap-3 ${
+    isCustomer ? "grid-cols-2" : "sm:grid-cols-2"
+  }`}
+>
 
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Assignee
-                    </p>
-                    <p className="mt-1 text-sm text-foreground">{ticket.assignedTo
-                      ? ticket.assignedTo.name
-                      : "Unassigned"}</p>
-                  </div>
+  {isCustomer ? (
+    <>
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+          Created
+        </p>
 
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                      SLA
-                    </p>
-                    <p className="mt-1 text-sm text-foreground">{ticket.slaDeadline
-                      ? new Date(
-                        ticket.slaDeadline
-                      ).toLocaleString()
-                      : "No SLA"}</p>
-                  </div>
+        <p className="mt-1 text-sm text-foreground">
+          {formatDate(ticket.createdAt)}
+        </p>
+      </div>
 
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Status
-                    </p>
-                    <div className="mt-1">
-                      <StatusBadge
-                        status={
-                          ticket.status
-                            .replace("-", " ")
-                            .replace(/\b\w/g, (c: string) =>
-                              c.toUpperCase()
-                            )
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+          Status
+        </p>
 
-                <div className="flex flex-wrap gap-2">
-                  <PriorityBadge
-                    priority={
-                      ticket.priority.charAt(0).toUpperCase() +
-                      ticket.priority.slice(1)
-                    }
-                  />
-                </div>
+        <div className="mt-1">
+          <StatusBadge
+            status={ticket.status
+              .replace("-", " ")
+              .replace(/\b\w/g, (c: string) =>
+                c.toUpperCase()
+              )}
+          />
+        </div>
+      </div>
+    </>
+  ) : (
+    <>
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+          Requester
+        </p>
+
+        <p className="mt-1 text-sm text-foreground">
+          {ticket.createdBy?.name ?? "Unknown User"}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+          Assignee
+        </p>
+
+        <p className="mt-1 text-sm text-foreground">
+          {ticket.assignedTo
+            ? ticket.assignedTo.name
+            : "Unassigned"}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+          SLA
+        </p>
+
+        <p className="mt-1 text-sm text-foreground">
+          {ticket.slaDeadline
+            ? formatDate(ticket.slaDeadline)
+            : "No SLA"}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+          Status
+        </p>
+
+        <div className="mt-1">
+          <StatusBadge
+            status={ticket.status
+              .replace("-", " ")
+              .replace(/\b\w/g, (c: string) =>
+                c.toUpperCase()
+              )}
+          />
+        </div>
+      </div>
+    </>
+  )}
+
+</div>
+
+                {!isCustomer && (
+  <div className="flex flex-wrap gap-2">
+    <PriorityBadge
+      priority={
+        ticket.priority.charAt(0).toUpperCase() +
+        ticket.priority.slice(1)
+      }
+    />
+  </div>
+)}
               </div>
             </Link>
           ))

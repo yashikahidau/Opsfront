@@ -41,12 +41,10 @@ export default function AgentsPage() {
     useState("");
 
   const [selectedRole, setSelectedRole] =
-    useState<
-      "admin" | "agent" | "requester"
-    >("agent");
+    useState<"admin" | "agent">("agent");
 
   const [filter, setFilter] = useState<
-    "all" | "admin" | "agent" | "requester"
+    "all" | "owner" | "admin" | "agent"
   >("all");
 
   const [search, setSearch] = useState("");
@@ -89,11 +87,11 @@ export default function AgentsPage() {
       hint: "Support engineers",
     },
     {
-      label: "Requesters",
+      label: "Owners",
       value: users.filter(
-        (u) => u.role === "requester"
+        (u) => u.role === "owner"
       ).length,
-      hint: "Ticket creators",
+      hint: "Workspace owners",
     },
     {
       label: "Assigned Tickets",
@@ -103,6 +101,13 @@ export default function AgentsPage() {
         0
       ),
       hint: "Across all agents",
+    },
+    {
+      label: "Customers",
+      value: users.filter(
+        (u) => u.userType === "customer"
+      ).length,
+      hint: "Ticket creators",
     },
   ];
 
@@ -195,8 +200,11 @@ export default function AgentsPage() {
     );
 
   const filteredUsers = users.filter((user) => {
+    if (user.userType !== "internal") return false;
+
     const matchesRole =
-      filter === "all" || user.role === filter;
+      filter === "all" ||
+      user.role === filter;
 
     const query = search.toLowerCase();
 
@@ -261,9 +269,9 @@ export default function AgentsPage() {
                 setFilter(
                   e.target.value as
                   | "all"
+                  | "owner"
                   | "admin"
                   | "agent"
-                  | "requester"
                 )
               }
               className="
@@ -293,7 +301,9 @@ export default function AgentsPage() {
               <option value="all">All Users</option>
               <option value="admin">Admins</option>
               <option value="agent">Agents</option>
-              <option value="requester">Requesters</option>
+              <option value="owner">
+                Owners
+              </option>
             </select>
 
             <ChevronDown
@@ -410,11 +420,11 @@ export default function AgentsPage() {
                                 : "text-muted-foreground"
                               }`}
                           >
-                            {agent.role === "admin"
-                              ? "Admin"
-                              : agent.role === "agent"
-                                ? "Agent"
-                                : "Requester"}
+                            {agent.role === "owner"
+                              ? "Owner"
+                              : agent.role === "admin"
+                                ? "Admin"
+                                : "Agent"}
                           </span>
                         </div>
                       </div>
@@ -471,7 +481,11 @@ export default function AgentsPage() {
                           onClick={() => {
                             setSelectedUser(agent);
 
-                            setSelectedRole(agent.role);
+                            setSelectedRole(
+                              agent.role === "admin"
+                                ? "admin"
+                                : "agent"
+                            );
 
                             loadTickets(agent._id);
                           }}
@@ -618,7 +632,12 @@ export default function AgentsPage() {
         onSubmit={async (values) => {
           await addUser(values);
 
-          toast.success("Agent created.");
+          toast.success(
+            `${values.role === "admin"
+              ? "Admin"
+              : "Agent"
+            } created successfully.`
+          );
 
           setShowAddAgent(false);
         }}
@@ -787,21 +806,17 @@ export default function AgentsPage() {
                       e.target.value as
                       | "admin"
                       | "agent"
-                      | "requester"
                     )
                   }
                   className="w-full rounded-xl border border-border bg-background p-3"
                 >
+
                   <option value="admin">
                     Admin
                   </option>
 
                   <option value="agent">
                     Agent
-                  </option>
-
-                  <option value="requester">
-                    Requester
                   </option>
                 </select>
 

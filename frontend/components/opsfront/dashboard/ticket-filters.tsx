@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 
 import type { TicketFilters as TicketFiltersType } from "@/lib/ticket";
 
+import { useAuth } from "@/context/AuthContext";
+
 interface TicketFiltersProps {
      filters: TicketFiltersType;
 
@@ -73,6 +75,12 @@ export default function TicketFilters({
      setFilters,
      isFetching,
 }: TicketFiltersProps) {
+
+     const { user } = useAuth();
+
+const isCustomer =
+  user?.userType === "customer";
+
      const hasFilters =
           filters.search ||
           filters.status !== "all" ||
@@ -96,7 +104,11 @@ export default function TicketFilters({
 
                          <input
                               type="text"
-                              placeholder="Search tickets..."
+                              placeholder={
+  isCustomer
+    ? "Search your support tickets..."
+    : "Search tickets..."
+}
                               value={filters.search}
                               autoComplete="off"
                               onChange={(e) =>
@@ -111,13 +123,18 @@ export default function TicketFilters({
                     </div>
 
                     <p className="text-xs text-muted-foreground">
-                         Search by title, description, priority,
-                         status or category.
+                        {isCustomer
+  ? "Search by ticket title, description or category."
+  : "Search by title, description, priority, status or category."}
                     </p>
 
                </div>
 
-               <div className="mt-8 space-y-7">
+              <div
+  className={`mt-8 ${
+    isCustomer ? "space-y-5" : "space-y-7"
+  }`}
+>
 
                     {/* STATUS */}
 
@@ -152,41 +169,45 @@ export default function TicketFilters({
 
                     {/* PRIORITY */}
 
-                    <div>
+                   {!isCustomer && (
 
-                         <h3 className="mb-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">
-                              Priority
-                         </h3>
+<div>
 
-                         <div className="flex flex-wrap gap-2">
+     <h3 className="mb-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+          Priority
+     </h3>
 
-                              {priorityFilters.map((filter) => (
+     <div className="flex flex-wrap gap-2">
 
-                                   <FilterChip
-                                        key={filter.value}
-                                        active={filters.priority === filter.value}
-                                        onClick={() =>
-                                             setFilters((prev) => ({
-                                                  ...prev,
-                                                  priority: filter.value,
-                                             }))
-                                        }
-                                   >
-                                        {filter.label}
-                                   </FilterChip>
+          {priorityFilters.map((filter) => (
 
-                              ))}
+               <FilterChip
+                    key={filter.value}
+                    active={filters.priority === filter.value}
+                    onClick={() =>
+                         setFilters((prev) => ({
+                              ...prev,
+                              priority: filter.value,
+                         }))
+                    }
+               >
+                    {filter.label}
+               </FilterChip>
 
-                         </div>
+          ))}
 
-                    </div>
+     </div>
+
+</div>
+
+)}
 
                     {/* CATEGORY */}
 
                     <div>
 
                          <h3 className="mb-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">
-                              Category
+                              {isCustomer ? "Issue Type" : "Category"}
                          </h3>
 
                          <div className="flex flex-wrap gap-2">
@@ -221,11 +242,15 @@ export default function TicketFilters({
                     <div>
 
                          <p className="text-sm font-medium text-foreground">
-                              Refine your support queue
+                              {isCustomer
+  ? "Find your support requests"
+  : "Refine your support queue"}
                          </p>
 
                          <p className="mt-1 text-sm text-muted-foreground">
-                              Combine search with filters to quickly locate tickets.
+                              {isCustomer
+  ? "Use search and filters to quickly find your support tickets."
+  : "Combine search with filters to quickly locate tickets."}
                          </p>
 
                     </div>
@@ -243,7 +268,7 @@ export default function TicketFilters({
                               className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-destructive/20 bg-destructive/10 px-5 py-3 text-sm font-medium text-destructive transition-all duration-200 hover:bg-destructive/20"
                          >
                               <RotateCcw className="size-4" />
-                              Reset Filters
+                             Clear Filters
                          </button>
                     )}
 

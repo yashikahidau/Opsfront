@@ -4,9 +4,13 @@ const User = require("../models/User");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const generateToken = (userId) => {
+const generateToken = (user) => {
      return jwt.sign(
-          { userId },
+          {
+               userId: user._id,
+               role: user.role,
+               userType: user.userType,
+          },
           process.env.JWT_SECRET,
           {
                expiresIn:
@@ -20,7 +24,12 @@ const sanitizeUser = (user) => ({
      name: user.name,
      email: user.email,
      workspaceName: user.workspaceName,
+
+     userType: user.userType,
      role: user.role,
+     isActive: user.isActive,
+     lastSeen: user.lastSeen,
+
      createdAt: user.createdAt,
      updatedAt: user.updatedAt,
 });
@@ -63,13 +72,31 @@ const googleLogin = async (req, res) => {
           });
 
           if (!user) {
+
+               const userCount = await User.countDocuments();
+               const isFirstUser = userCount === 0;
+
                user = await User.create({
                     name,
                     email,
+                    password: null,
+
                     workspaceName: `${name}'s Workspace`,
+
                     provider: "google",
                     googleId: sub,
+
+                    userType: isFirstUser
+                         ? "internal"
+                         : "customer",
+
+                    role: isFirstUser
+                         ? "owner"
+                         : null,
+
+                    isActive: true,
                });
+
           } else if (
                user.provider === "local" &&
                !user.googleId
@@ -78,6 +105,8 @@ const googleLogin = async (req, res) => {
                await user.save();
           }
 
+          user.lastSeen = new Date();
+          await user.save();
 
           const token = generateToken(user._id);
 

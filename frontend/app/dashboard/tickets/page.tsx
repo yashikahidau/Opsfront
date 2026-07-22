@@ -14,6 +14,8 @@ import { useTickets } from "@/hooks/useTickets";
 
 import { exportTicketsToCSV } from "@/lib/exportTickets";
 
+import { useAuth } from "@/context/AuthContext";
+
 export default function TicketsPage() {
 
   const {
@@ -28,6 +30,10 @@ export default function TicketsPage() {
     setPage,
     pagination,
   } = useTickets();
+  const { user } = useAuth();
+
+  const isCustomer =
+    user?.userType === "customer";
 
 
   if (loading) {
@@ -56,35 +62,55 @@ export default function TicketsPage() {
     <div className="space-y-7">
       {/* Header */}
       <section className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+
         <div className="max-w-2xl">
+
           <p className="text-[11px] uppercase tracking-[0.28em] text-primary/80">
-            Ticket operations
+            {isCustomer ? "Support Center" : "Ticket Operations"}
           </p>
+
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Manage the queue without losing sight of risk.
+            {isCustomer
+              ? "My Support Tickets"
+              : "Manage the queue without losing sight of risk."}
           </h2>
+
           <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground">
-            Filter the support queue, track SLA windows, and quickly spot tickets
-            drifting toward breach.
+
+            {isCustomer
+              ? "Track your requests, reply to conversations, and create new support tickets whenever you need assistance."
+              : "Filter the support queue, track SLA windows, and quickly spot tickets drifting toward breach."}
+
           </p>
+
         </div>
 
         <div className="flex flex-wrap gap-3">
+
           <CreateTicketDialog
             onCreated={refresh}
           />
-          <button
-            onClick={() => exportTicketsToCSV(tickets)}
-            disabled={tickets.length === 0}
-            className="cursor-pointer rounded-full border border-border bg-background/40 px-5 py-2.5 text-sm font-medium text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Export queue
-          </button>
+
+          {!isCustomer && (
+
+            <button
+              onClick={() => exportTicketsToCSV(tickets)}
+              disabled={tickets.length === 0}
+              className="cursor-pointer rounded-full border border-border bg-background/40 px-5 py-2.5 text-sm font-medium transition-all duration-200 hover:border-primary/20 hover:bg-card disabled:opacity-50"
+            >
+              Export Queue
+            </button>
+
+          )}
+
         </div>
+
       </section>
 
       {/* Stats */}
-      <TicketStats tickets={tickets} />
+      {!isCustomer && (
+        <TicketStats tickets={tickets} />
+      )}
 
       {/* Filters / Search */}
       <TicketFilters
@@ -93,22 +119,39 @@ export default function TicketsPage() {
         isFetching={isFetching}
       />
 
-      <div className="rounded-2xl border border-primary/15 bg-primary/[0.05] px-4 py-3">
-        <p className="text-xs text-muted-foreground">Queue snapshot</p>
-        <p className="mt-1 text-sm font-medium text-foreground">
-          {tickets.filter((t) => t.riskScore >= 70).length} at risk ·{" "}
-          {tickets.filter((t) => t.status === "waiting").length} waiting ·{" "}
-          {tickets.filter((t) => !t.assignedTo).length} unassigned
-        </p>
-      </div>
+      {!isCustomer && (
+
+        <div className="rounded-2xl border border-primary/15 bg-primary/[0.05] px-4 py-3">
+
+          <p className="text-xs text-muted-foreground">
+            Queue Snapshot
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-foreground">
+
+            {tickets.filter((t) => t.riskScore >= 70).length}
+            {" "}at risk ·{" "}
+
+            {tickets.filter((t) => t.status === "waiting").length}
+            {" "}waiting ·{" "}
+
+            {tickets.filter((t) => !t.assignedTo).length}
+            {" "}unassigned
+
+          </p>
+
+        </div>
+
+      )}
 
       {/* Tickets Table */}
       <TicketsTable
-        tickets={tickets}
-        page={page}
-        setPage={setPage}
-        pagination={pagination}
-      />
+  tickets={tickets}
+  page={page}
+  setPage={setPage}
+  pagination={pagination}
+  isCustomer={isCustomer}
+/>
     </div>
   );
 }

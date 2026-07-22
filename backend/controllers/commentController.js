@@ -65,7 +65,7 @@ const addComment = async (req, res) => {
 
           const comment = await Comment.create({
                ticket: ticket._id,
-               author: req.user._id,
+               author: req.user.id,
                message,
           });
 
@@ -76,7 +76,7 @@ const addComment = async (req, res) => {
 
           await logActivity({
                ticket: ticket._id,
-               user: req.user._id,
+               user: req.user.id,
                type: "comment",
                message: "Added an internal comment",
           });

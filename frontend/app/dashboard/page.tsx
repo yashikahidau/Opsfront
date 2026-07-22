@@ -11,6 +11,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import LiveTicketTable from "@/components/opsfront/dashboard/live-ticket-table";
+import { useAuth } from "@/context/AuthContext";
+
 
 const buildKPIs = (
   data: ReturnType<
@@ -91,7 +93,20 @@ export default function DashboardPage() {
     refresh,
   } = useDashboard();
 
-  const kpis = buildKPIs(data);
+  const { user } = useAuth();
+
+const isCustomer =
+  user?.userType === "customer";
+
+const kpis = isCustomer
+  ? buildKPIs(data).filter((item) =>
+      [
+        "Open tickets",
+        "In Progress",
+        "Resolved",
+      ].includes(item.label)
+    )
+  : buildKPIs(data);
 
   const escalations =
     data?.latestTickets ?? [];
@@ -119,7 +134,83 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+  <div className="space-y-8">
+    {isCustomer ? (
+      <>
+        <>
+  <section className="rounded-3xl border border-border bg-card/30 p-6 sm:p-8">
+    <div className="max-w-3xl">
+      <p className="text-[11px] uppercase tracking-[0.28em] text-primary/80">
+        Welcome
+      </p>
+
+      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+        Need help? We're here to assist.
+      </h2>
+
+      <p className="mt-4 text-base leading-7 text-muted-foreground">
+        Create a support ticket, track its progress, and receive updates from our
+        support team—all in one place.
+      </p>
+
+      <div className="mt-6">
+        <CreateTicketDialog onCreated={refresh} />
+      </div>
+    </div>
+  </section>
+
+  <section className="grid gap-4 md:grid-cols-3">
+    {kpis.map((item) => {
+      const Icon = item.icon;
+
+      return (
+        <div
+          key={item.label}
+          className="rounded-3xl border border-border bg-card/40 p-5"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {item.label}
+              </p>
+
+              <h3 className="mt-3 font-mono text-3xl font-semibold text-foreground">
+                {item.value}
+              </h3>
+
+              <p className="mt-2 text-sm text-muted-foreground">
+                {item.hint}
+              </p>
+            </div>
+
+            <div className="grid size-11 place-items-center rounded-2xl border border-border bg-background/40">
+              <Icon className="size-5 text-primary" />
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </section>
+
+  <section>
+    <div className="mb-4">
+      <h3 className="text-lg font-semibold text-foreground">
+        My Recent Tickets
+      </h3>
+
+      <p className="mt-1 text-sm text-muted-foreground">
+        View the latest status of your submitted support requests.
+      </p>
+    </div>
+
+    <LiveTicketTable
+      tickets={data?.latestTickets ?? []}
+    />
+  </section>
+</>
+      </>
+    ) : (
+      <>
       <section className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
         <div className="rounded-3xl border border-border bg-card/30 p-6 sm:p-7">
           <div className="max-w-2xl">
@@ -327,7 +418,9 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </section>
-    </div>
-  );
+           </section>
+      </>
+    )}
+  </div>
+);
 }

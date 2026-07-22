@@ -65,7 +65,10 @@ export default function AddAgentForm({
       form.setServerError(
         err instanceof Error
           ? err.message
-          : "Unable to create agent."
+          : `Unable to create ${form.values.role === "admin"
+            ? "admin"
+            : "agent"
+          }.`
       );
     } finally {
       form.setLoading(false);
@@ -146,8 +149,8 @@ export default function AddAgentForm({
             form.setValue(
               "role",
               e.target.value as
-                | "admin"
-                | "agent"
+              | "admin"
+              | "agent"
             )
           }
           className="h-11 w-full rounded-xl border border-border bg-background px-4"
@@ -186,10 +189,17 @@ export default function AddAgentForm({
           {form.loading ? (
             <>
               <LoadingSpinner className="mr-2" />
-              Creating...
+              `Creating ${
+                form.values.role === "admin"
+                  ? "Admin"
+                  : "Agent"
+              }...`
             </>
           ) : (
-            "Create Agent"
+            `Create ${form.values.role === "admin"
+              ? "Admin"
+              : "Agent"
+            }`
           )}
         </Button>
       </div>

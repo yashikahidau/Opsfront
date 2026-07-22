@@ -15,7 +15,12 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: "admin" | "agent" | "requester";
+
+  userType: "internal" | "customer";
+
+  role: "owner" | "admin" | "agent" | null;
+
+  isActive: boolean;
 
   assignedTickets: number;
   openTickets: number;

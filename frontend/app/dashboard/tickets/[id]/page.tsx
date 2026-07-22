@@ -20,6 +20,7 @@ import { useActivities } from "@/hooks/useActivities";
 import { useUsers } from "@/hooks/useUsers";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
+import { useAuth } from "@/context/AuthContext";
 import type {
   TicketStatus,
   TicketPriority,
@@ -58,9 +59,21 @@ function getTimeRemaining(
   return `${mins}m`;
 }
 
+
+function formatDate(date: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(date));
+}
+
 export default function TicketDetailPage() {
 
   const params = useParams();
+  const { user } = useAuth();
 
   const {
     ticket,
@@ -83,9 +96,29 @@ export default function TicketDetailPage() {
     refresh: refreshActivities,
   } = useActivities(params.id as string);
 
-  const {
-    users,
-  } = useUsers();
+  const { users } = useUsers();
+
+  const isOwner = user?.role === "owner";
+  const isAdmin = user?.role === "admin";
+  const isAgent = user?.role === "agent";
+  const isCustomer = user?.userType === "customer";
+
+  const isAssignedAgent =
+    isAgent &&
+    ticket?.assignedTo?._id === user?.id;
+
+  const canAssign = isOwner || isAdmin;
+
+  const canChangePriority = isOwner || isAdmin;
+
+  const canManageAssignedTicket =
+    isOwner ||
+    isAdmin ||
+    isAssignedAgent;
+
+  const canResolve = canManageAssignedTicket;
+
+  const canChangeStatus = canManageAssignedTicket;
 
   const [newComment, setNewComment] = useState("");
 
@@ -172,32 +205,39 @@ export default function TicketDetailPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSelectedUser(
-                ticket?.assignedTo?._id ?? ""
-              );
-
-              setShowAssignDialog(true);
-            }}
-          >
-            Reassign
-          </Button>
-          <button
-            onClick={resolveTicket}
-            disabled={ticket.status === "resolved"}
-            className="cursor-pointer rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {ticket.status === "resolved"
-              ? "Resolved"
-              : "Resolve ticket"}
-          </button>
+          {!isCustomer && canAssign && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedUser(ticket?.assignedTo?._id ?? "");
+                setShowAssignDialog(true);
+              }}
+            >
+              Reassign
+            </Button>
+          )}
+          {!isCustomer && canResolve && (
+            <button
+              onClick={resolveTicket}
+              disabled={ticket.status === "resolved"}
+              className="cursor-pointer rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {ticket.status === "resolved"
+                ? "Resolved"
+                : "Resolve ticket"}
+            </button>
+          )}
         </div>
       </section>
 
       {/* Hero ticket summary */}
-      <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+      <section
+  className={
+    isCustomer
+      ? "space-y-6"
+      : "grid gap-6 xl:grid-cols-[1.25fr_0.75fr]"
+  }
+>
         <div className="rounded-3xl border border-border bg-card/30 p-6 sm:p-7">
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -213,25 +253,28 @@ export default function TicketDetailPage() {
                 </p>
               </div>
 
-              <button className="cursor-pointer rounded-2xl border border-border bg-background/40 p-2.5 text-muted-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card hover:text-foreground">
-                <MoreHorizontal className="size-5" />
-              </button>
+              {!isCustomer && (
+                <button className="cursor-pointer rounded-2xl border border-border bg-background/40 p-2.5 text-muted-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card hover:text-foreground">
+                  <MoreHorizontal className="size-5" />
+                </button>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2">
               {/* Priority */}
-              <Badge
-                tone={
-                  ticket.priority === "critical"
-                    ? "critical"
-                    : "watch"
-                }
-              >
-                {ticket.priority
-                  .replace(/\b\w/g, (c: string) =>
+              {!isCustomer && (
+                <Badge
+                  tone={
+                    ticket.priority === "critical"
+                      ? "critical"
+                      : "watch"
+                  }
+                >
+                  {ticket.priority.replace(/\b\w/g, (c: string) =>
                     c.toUpperCase()
                   )}
-              </Badge>
+                </Badge>
+              )}
 
               {/* Status */}
               <Badge
@@ -251,164 +294,187 @@ export default function TicketDetailPage() {
               </Badge>
 
               {/* Risk */}
-              <Badge
-                tone={
-                  ticket.riskScore >= 70
-                    ? "risk"
-                    : "watch"
-                }
-              >
-                {ticket.riskScore >= 70
-                  ? "At Risk"
-                  : "Healthy"}
-              </Badge>
-
-              {/* SLA */}
-              {ticket.slaDeadline && (
+              {!isCustomer && (
                 <Badge
                   tone={
-                    new Date(ticket.slaDeadline) <
-                      new Date()
-                      ? "critical"
+                    ticket.riskScore >= 70
+                      ? "risk"
                       : "watch"
                   }
                 >
-                  {new Date(
-                    ticket.slaDeadline
-                  ).toLocaleString()}
+                  {ticket.riskScore >= 70
+                    ? "At Risk"
+                    : "Healthy"}
                 </Badge>
               )}
+
+              {/* SLA */}
+              {!isCustomer &&
+                ticket.slaDeadline && (
+                  <Badge
+                    tone={
+                      new Date(ticket.slaDeadline) < new Date()
+                        ? "critical"
+                        : "watch"
+                    }
+                  >
+                    {new Date(ticket.slaDeadline).toLocaleString()}
+                  </Badge>
+                )}
             </div>
 
-            <div className="grid gap-4 pt-2 sm:grid-cols-2 xl:grid-cols-4">
+            <div
+              className={`grid gap-4 pt-2 ${isCustomer
+                  ? "sm:grid-cols-3"
+                  : "sm:grid-cols-2 xl:grid-cols-4"
+                }`}
+            >
               <MetaCard
-                label="Requester"
-                value={ticket.createdBy.name}
-                sub={ticket.createdBy.email}
-              />
-              <MetaCard
-                label="Assigned to"
-                value={
-                  ticket.assignedTo
-                    ? ticket.assignedTo.name
-                    : "Unassigned"
-                }
-                sub={
-                  ticket.assignedTo
-                    ? ticket.assignedTo.email
-                    : "Waiting for assignment"
-                }
-              />
+  label="Submitted By"
+  value={ticket.createdBy.name}
+  sub=""
+/>
+              {!isCustomer && (
+                <MetaCard
+                  label="Assigned to"
+                  value={
+                    ticket.assignedTo
+                      ? ticket.assignedTo.name
+                      : "Unassigned"
+                  }
+                  sub={
+                    ticket.assignedTo
+                      ? ticket.assignedTo.email
+                      : "Waiting for assignment"
+                  }
+                />
+              )}
               <MetaCard
                 label="Created"
-                value={new Date(ticket.createdAt).toLocaleString()}
+                value={formatDate(ticket.createdAt)}
                 sub="Ticket created"
               />
               <MetaCard
                 label="Last updated"
-                value={new Date(ticket.updatedAt).toLocaleString()}
+                value={formatDate(ticket.updatedAt)}
                 sub="Latest activity"
               />
             </div>
           </div>
         </div>
 
-        <div className="rounded-3xl border border-primary/15 bg-primary/[0.05] p-6 sm:p-7">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-primary/80">
-            Live risk signal
-          </p>
-
-          <div className="mt-4">
-            <p className="font-mono text-5xl font-semibold tracking-tight text-primary">
-              {ticket.riskScore}
+        {!isCustomer && (
+          <div className="rounded-3xl border border-primary/15 bg-primary/[0.05] p-6 sm:p-7">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-primary/80">
+              Live risk signal
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Current risk score for this ticket
-            </p>
-          </div>
 
-          <div className="mt-5 h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{
-                width: `${ticket.riskScore}%`,
-              }}
-            />
-          </div>
+            <div className="mt-4">
+              <p className="font-mono text-5xl font-semibold tracking-tight text-primary">
+                {ticket.riskScore}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Current risk score for this ticket
+              </p>
+            </div>
 
-          <div className="mt-6 space-y-3">
-            <SignalRow
-              label="Time to breach"
-              value={
-                ticket.slaDeadline
-                  ? new Date(ticket.slaDeadline).toLocaleString()
-                  : "No SLA"
-              }
-            />
-            <SignalRow
-              label="Queue pressure"
-              value={
-                ticket.riskScore >= 70
-                  ? "High"
-                  : ticket.riskScore >= 40
-                    ? "Medium"
-                    : "Low"
-              }
-            />
-            <SignalRow
-              label="Requester impact"
-              value={ticket.priority.toUpperCase()}
-            />
-          </div>
+            <div className="mt-5 h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{
+                  width: `${ticket.riskScore}%`,
+                }}
+              />
+            </div>
 
-          <div className="mt-6 rounded-2xl border border-border bg-card/50 p-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-xl border border-primary/20 bg-primary/10 p-2 text-primary">
-                <Sparkles className="size-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  AI triage summary
-                </p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {ticket.riskScore >= 90
-                    ? "This ticket is in a critical state and requires immediate attention because the risk score is extremely high."
-                    : ticket.riskScore >= 70
-                      ? "This ticket has elevated operational risk and should be prioritized to avoid SLA breach."
-                      : ticket.riskScore >= 40
-                        ? "This ticket should be monitored closely. Current indicators suggest moderate operational risk."
-                        : "This ticket is currently healthy with no significant operational risk indicators."}
-                </p>
+            <div className="mt-6 space-y-3">
+              <SignalRow
+                label="Time to breach"
+                value={
+                  ticket.slaDeadline
+                    ? new Date(ticket.slaDeadline).toLocaleString()
+                    : "No SLA"
+                }
+              />
+              <SignalRow
+                label="Queue pressure"
+                value={
+                  ticket.riskScore >= 70
+                    ? "High"
+                    : ticket.riskScore >= 40
+                      ? "Medium"
+                      : "Low"
+                }
+              />
+              <SignalRow
+                label="Requester impact"
+                value={ticket.priority.toUpperCase()}
+              />
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-border bg-card/50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-xl border border-primary/20 bg-primary/10 p-2 text-primary">
+                  <Sparkles className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    AI triage summary
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {ticket.riskScore >= 90
+                      ? "This ticket is in a critical state and requires immediate attention because the risk score is extremely high."
+                      : ticket.riskScore >= 70
+                        ? "This ticket has elevated operational risk and should be prioritized to avoid SLA breach."
+                        : ticket.riskScore >= 40
+                          ? "This ticket should be monitored closely. Current indicators suggest moderate operational risk."
+                          : "This ticket is currently healthy with no significant operational risk indicators."}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* Main content */}
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        {/* Left column */}
+      <section
+        className={
+          isCustomer
+            ? "space-y-6"
+            : "grid gap-6 xl:grid-cols-[1.15fr_0.85fr]"
+        }
+      >
+        {/* LEFT */}
         <div className="space-y-6">
+
           {/* Conversation */}
+
           <div className="rounded-3xl border border-border bg-card/30 p-6">
+
             <div className="flex items-center justify-between">
+
               <div>
+
                 <p className="text-sm font-medium text-foreground">
                   Conversation
                 </p>
+
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Request context and support updates
+                  {isCustomer
+                    ? "Chat directly with our support team regarding this ticket."
+                    : "Request context and support updates"}
                 </p>
+
               </div>
 
               <button
-                onClick={() => {
-                  commentRef.current?.focus();
-                }}
-                className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card"
+                onClick={() => commentRef.current?.focus()}
+                className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm hover:border-primary/20"
               >
                 Reply
               </button>
+
             </div>
 
             <div className="mt-5 space-y-4">
@@ -417,12 +483,14 @@ export default function TicketDetailPage() {
 
                 <div className="rounded-2xl border border-dashed border-border bg-background/20 p-8 text-center">
 
-                  <p className="text-sm font-medium text-foreground">
-                    No comments yet
+                  <p className="text-sm font-medium">
+                    No messages yet
                   </p>
 
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Start the conversation by posting the first internal update.
+                    {isCustomer
+                      ? "Your conversation with our support team will appear here."
+                      : "Start the conversation by posting the first internal update."}
                   </p>
 
                 </div>
@@ -433,28 +501,31 @@ export default function TicketDetailPage() {
 
                   <div
                     key={comment._id}
-                    className="rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10"
+                    className="rounded-2xl border border-border bg-background/35 p-4"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+
+                    <div className="flex justify-between">
 
                       <div className="flex items-center gap-3">
 
-                        <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                        <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
                           {comment.author.name
                             .split(" ")
-                            .map((part) => part[0])
+                            .map((p) => p[0])
                             .join("")
                             .slice(0, 2)}
                         </div>
 
                         <div>
-                          <p className="text-sm font-medium text-foreground">
+
+                          <p className="text-sm font-medium">
                             {comment.author.name}
                           </p>
 
                           <p className="text-xs text-muted-foreground">
                             {comment.author.email}
                           </p>
+
                         </div>
 
                       </div>
@@ -477,65 +548,84 @@ export default function TicketDetailPage() {
 
             </div>
 
-            {/* Comment composer */}
             <div className="mt-5 rounded-2xl border border-border bg-background/40 p-4">
+
               <textarea
                 ref={commentRef}
                 disabled={posting}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add an internal update or reply to the requester..."
                 rows={4}
-                className="w-full resize-none rounded-2xl border border-border bg-background/50 px-4 py-3 text-sm text-foreground outline-none transition-all duration-200 focus:border-primary/20"
+                placeholder={
+                  isCustomer
+                    ? "Type your message to the support team..."
+                    : "Add an internal update or reply..."
+                }
+                className="w-full resize-none rounded-2xl border border-border bg-background/50 px-4 py-3"
               />
 
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap gap-2">
+              <div className="mt-4 flex justify-between items-center">
+
+                {!isCustomer && (
+
                   <button
-                    disabled title="Coming Soon"
-                    className="cursor-pointer inline-flex items-center gap-2 rounded-2xl border border-border bg-background/40 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
+                    disabled
+                    className="inline-flex items-center gap-2 rounded-2xl border border-border bg-background/40 px-3 py-2 text-sm"
+                  >
                     <Bot className="size-4" />
-                    AI draft
+                    AI Draft
                   </button>
-                </div>
+
+                )}
 
                 <button
                   onClick={handlePostComment}
-                  disabled={posting || !newComment.trim()}
-                  className="cursor-pointer rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={!newComment.trim() || posting}
+                  className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
                 >
-                  {posting ? "Posting..." : "Post update"}
+                  {posting
+                    ? "Sending..."
+                    : isCustomer
+                      ? "Send Message"
+                      : "Post Update"}
                 </button>
+
               </div>
+
             </div>
+
           </div>
 
           {/* Activity */}
+
           <div className="rounded-3xl border border-border bg-card/30 p-6">
+
             <div>
-              <p className="text-sm font-medium text-foreground">
-                Activity timeline
+
+              <p className="text-sm font-medium">
+                Activity Timeline
               </p>
+
               <p className="mt-1 text-sm text-muted-foreground">
-                Status changes, escalations, and internal ops history
+                {isCustomer
+                  ? "View the latest updates and progress on your support request."
+                  : "Status changes, escalations and operational history."}
               </p>
+
             </div>
 
             <div className="mt-6 space-y-4">
 
               {activitiesLoading ? (
 
-                <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/35 p-4">
-                  <LoadingSpinner className="h-4 w-4 text-primary" />
+                <div className="flex items-center gap-3">
+
+                  <LoadingSpinner className="h-4 w-4" />
+
                   <span className="text-sm text-muted-foreground">
-                    Loading activity...
+                    Loading...
                   </span>
-                </div>
 
-              ) : activities.length === 0 ? (
-
-                <div className="rounded-2xl border border-border bg-background/35 p-4 text-sm text-muted-foreground">
-                  No activity yet.
                 </div>
 
               ) : (
@@ -544,41 +634,27 @@ export default function TicketDetailPage() {
 
                   <div
                     key={item._id}
-                    className="flex gap-4 rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10"
+                    className="flex gap-4 rounded-2xl border border-border bg-background/35 p-4"
                   >
 
-                    <div className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                    <div className="grid size-9 place-items-center rounded-full bg-primary/10 text-primary">
 
-                      {item.type === "status" ? (
-
-                        <ShieldAlert className="size-4" />
-
-                      ) : item.type === "priority" ? (
-
-                        <Sparkles className="size-4" />
-
-                      ) : item.type === "comment" ? (
-
-                        <MessageSquare className="size-4" />
-
-                      ) : (
-
-                        <Clock3 className="size-4" />
-
-                      )}
+                      {item.type === "status"
+                        ? <ShieldAlert className="size-4" />
+                        : item.type === "priority"
+                          ? <Sparkles className="size-4" />
+                          : <MessageSquare className="size-4" />}
 
                     </div>
 
-                    <div className="flex-1">
+                    <div>
 
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium">
                         {item.message}
                       </p>
 
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {item.user.name}
-                        {" • "}
-                        {new Date(item.createdAt).toLocaleString()}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {item.user.name} • {new Date(item.createdAt).toLocaleString()}
                       </p>
 
                     </div>
@@ -590,172 +666,204 @@ export default function TicketDetailPage() {
               )}
 
             </div>
-          </div>
-        </div>
 
-        {/* Right column */}
-        <div className="space-y-6">
-          {/* Ticket actions */}
-          <div className="rounded-3xl border border-border bg-card/30 p-5">
-            <div>
-              <p className="text-sm font-medium text-foreground">Ticket actions</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Update ownership, status, and escalation state
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <div className="rounded-2xl border border-border bg-background/35 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Change status
-                    </p>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Update the current ticket status
-                    </p>
-                  </div>
-
-                  <select
-                    value={ticket.status}
-                    onChange={(e) =>
-                      handleStatusChange(
-                        e.target.value as typeof ticket.status
-                      )
-                    }
-                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-                  >
-                    {statusOptions.map((status) => (
-                      <option
-                        key={status}
-                        value={status}
-                      >
-                        {status
-                          .replace("-", " ")
-                          .replace(/\b\w/g, (c: string) =>
-                            c.toUpperCase()
-                          )}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <ActionCard
-                title="Assigned owner"
-                value={
-                  ticket.assignedTo
-                    ? ticket.assignedTo.name
-                    : "Unassigned"
-                }
-                helper={
-                  ticket.assignedTo
-                    ? ticket.assignedTo.email
-                    : "Waiting for assignment"
-                }
-              />
-
-              <div className="rounded-2xl border border-border bg-background/35 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Priority
-                    </p>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Update ticket priority
-                    </p>
-                  </div>
-
-                  <select
-                    value={ticket.priority}
-                    onChange={(e) =>
-                      handlePriorityChange(
-                        e.target.value as typeof ticket.priority
-                      )
-                    }
-                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                </div>
-              </div>
-
-              <ActionCard
-                title="Escalation state"
-                value={
-                  ticket.riskScore >= 90
-                    ? "Critical"
-                    : ticket.riskScore >= 70
-                      ? "At Risk"
-                      : ticket.riskScore >= 40
-                        ? "Watch"
-                        : "Healthy"
-                }
-                helper={
-                  ticket.slaDeadline
-                    ? `SLA: ${new Date(
-                      ticket.slaDeadline
-                    ).toLocaleString()}`
-                    : "No SLA assigned"
-                }
-                danger={ticket.riskScore >= 70}
-              />
-
-            </div>
-          </div>
-
-          {/* SLA block */}
-          <div className="rounded-3xl border border-border bg-card/30 p-5">
-            <div>
-              <p className="text-sm font-medium text-foreground">SLA status</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Response and resolution windows for this request
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <SlaRow
-                label="SLA Deadline"
-                value={
-                  ticket.slaDeadline
-                    ? new Date(
-                      ticket.slaDeadline
-                    ).toLocaleString()
-                    : "No SLA"
-                }
-              />
-
-              <SlaRow
-                label="Created"
-                value={new Date(
-                  ticket.createdAt
-                ).toLocaleString()}
-              />
-
-              <SlaRow
-                label="Time Remaining"
-                value={getTimeRemaining(
-                  ticket.slaDeadline
-                )}
-                danger={
-                  !!ticket.slaDeadline &&
-                  new Date(ticket.slaDeadline) <
-                  new Date()
-                }
-              />
-            </div>
           </div>
 
         </div>
+
+        {!isCustomer && (
+
+          <div className="space-y-6">
+
+            {/* Ticket Actions */}
+
+            <div className="rounded-3xl border border-border bg-card/30 p-5">
+
+              <div>
+
+                <p className="text-sm font-medium text-foreground">
+                  Ticket Actions
+                </p>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Update ownership, status and priority.
+                </p>
+
+              </div>
+
+              <div className="mt-5 space-y-3">
+
+                <div className="rounded-2xl border border-border bg-background/35 p-4">
+
+                  <div className="flex items-center justify-between gap-4">
+
+                    <div>
+
+                      <p className="text-sm font-medium">
+                        Change Status
+                      </p>
+
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Update ticket progress
+                      </p>
+
+                    </div>
+
+                    <select
+                      disabled={!canChangeStatus}
+                      value={ticket.status}
+                      onChange={(e) =>
+                        handleStatusChange(
+                          e.target.value as TicketStatus
+                        )
+                      }
+                      className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                    >
+
+                      {statusOptions.map(status => (
+                        <option
+                          key={status}
+                          value={status}
+                        >
+                          {status
+                            .replace("-", " ")
+                            .replace(/\b\w/g, c => c.toUpperCase())}
+                        </option>
+                      ))}
+
+                    </select>
+
+                  </div>
+
+                </div>
+
+                <ActionCard
+                  title="Assigned Owner"
+                  value={
+                    ticket.assignedTo
+                      ? ticket.assignedTo.name
+                      : "Unassigned"
+                  }
+                  helper={
+                    ticket.assignedTo
+                      ? ticket.assignedTo.email
+                      : "Waiting for assignment"
+                  }
+                />
+
+                <div className="rounded-2xl border border-border bg-background/35 p-4">
+
+                  <div className="flex items-center justify-between">
+
+                    <div>
+
+                      <p className="text-sm font-medium">
+                        Priority
+                      </p>
+
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Update ticket priority
+                      </p>
+
+                    </div>
+
+                    <select
+                      disabled={!canChangePriority}
+                      value={ticket.priority}
+                      onChange={(e) =>
+                        handlePriorityChange(
+                          e.target.value as TicketPriority
+                        )
+                      }
+                      className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                    >
+
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+
+                    </select>
+
+                  </div>
+
+                </div>
+
+                <ActionCard
+                  title="Escalation State"
+                  value={
+                    ticket.riskScore >= 90
+                      ? "Critical"
+                      : ticket.riskScore >= 70
+                        ? "At Risk"
+                        : ticket.riskScore >= 40
+                          ? "Watch"
+                          : "Healthy"
+                  }
+                  helper={
+                    ticket.slaDeadline
+                      ? `SLA: ${new Date(ticket.slaDeadline).toLocaleString()}`
+                      : "No SLA assigned"
+                  }
+                  danger={ticket.riskScore >= 70}
+                />
+
+              </div>
+
+            </div>
+
+            {/* SLA */}
+
+            <div className="rounded-3xl border border-border bg-card/30 p-5">
+
+              <div>
+
+                <p className="text-sm font-medium">
+                  SLA Status
+                </p>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Response and resolution windows.
+                </p>
+
+              </div>
+
+              <div className="mt-5 space-y-3">
+
+                <SlaRow
+                  label="SLA Deadline"
+                  value={
+                    ticket.slaDeadline
+                      ? new Date(ticket.slaDeadline).toLocaleString()
+                      : "No SLA"
+                  }
+                />
+
+                <SlaRow
+                  label="Created"
+                  value={formatDate(ticket.createdAt)}
+                />
+
+                <SlaRow
+                  label="Time Remaining"
+                  value={getTimeRemaining(ticket.slaDeadline)}
+                  danger={
+                    !!ticket.slaDeadline &&
+                    new Date(ticket.slaDeadline) < new Date()
+                  }
+                />
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
       </section>
 
-
-      {showAssignDialog && (
+      {canAssign && showAssignDialog && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm">
 
           <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6">
@@ -780,16 +888,18 @@ export default function TicketDetailPage() {
                 Unassigned
               </option>
 
-              {users.map((user) => (
+              {users
+                .filter((user) => user.userType === "internal")
+                .map((user) => (
 
-                <option
-                  key={user._id}
-                  value={user._id}
-                >
-                  {user.name}
-                </option>
+                  <option
+                    key={user._id}
+                    value={user._id}
+                  >
+                    {user.name}
+                  </option>
 
-              ))}
+                ))}
 
             </select>
 

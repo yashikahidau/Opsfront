@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 
 import FormInput from "@/components/form/FormInput";
-import Checkbox from "@/components/form/Checkbox";
 import FormAlert from "@/components/form/FormAlert";
 
 import { useForm } from "@/hooks/useForm";
@@ -17,7 +16,6 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 export type LoginFormValues = {
   email: string;
   password: string;
-  rememberMe: boolean;
 };
 
 interface LoginFormProps {
@@ -29,18 +27,9 @@ interface LoginFormProps {
 const initialValues: LoginFormValues = {
   email: "",
   password: "",
-  rememberMe: false,
 };
 
-const schema = {
-  ...loginSchema,
-
-  rememberMe() {
-    return {
-      valid: true,
-    };
-  },
-};
+const schema = loginSchema;
 
 export default function LoginForm({
   onSubmit,
@@ -129,20 +118,8 @@ export default function LoginForm({
           loading={form.loading}
         />
 
-        <div className="flex items-center justify-between gap-4">
-
-          <Checkbox
-            label="Remember me"
-
-            checked={form.values.rememberMe}
-
-            onCheckedChange={(checked) =>
-              form.setValue(
-                "rememberMe",
-                checked
-              )
-            }
-          />
+      <div className="flex justify-center
+      ">
 
           <Link
             href={
