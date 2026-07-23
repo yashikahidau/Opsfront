@@ -59,7 +59,7 @@ export default function TicketsPage() {
   }
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {/* Header */}
       <section className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
 
@@ -69,7 +69,7 @@ export default function TicketsPage() {
             {isCustomer ? "Support Center" : "Ticket Operations"}
           </p>
 
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">
             {isCustomer
               ? "My Support Tickets"
               : "Manage the queue without losing sight of risk."}
@@ -85,7 +85,7 @@ export default function TicketsPage() {
 
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
 
           <CreateTicketDialog
             onCreated={refresh}
@@ -96,7 +96,7 @@ export default function TicketsPage() {
             <button
               onClick={() => exportTicketsToCSV(tickets)}
               disabled={tickets.length === 0}
-              className="cursor-pointer rounded-full border border-border bg-background/40 px-5 py-2.5 text-sm font-medium transition-all duration-200 hover:border-primary/20 hover:bg-card disabled:opacity-50"
+              className="cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm sm:px-5 sm:py-2.5 text-sm font-medium transition-all duration-200 hover:border-primary/20 hover:bg-card disabled:opacity-50"
             >
               Export Queue
             </button>
@@ -127,31 +127,34 @@ export default function TicketsPage() {
             Queue Snapshot
           </p>
 
-          <p className="mt-1 text-sm font-medium text-foreground">
 
-            {tickets.filter((t) => t.riskScore >= 70).length}
-            {" "}at risk ·{" "}
+          <div className="mt-3 flex flex-wrap gap-2">
 
-            {tickets.filter((t) => t.status === "waiting").length}
-            {" "}waiting ·{" "}
+            <span className="rounded-full border border-border bg-background/40 px-3 py-1 text-xs font-medium">
+              {tickets.filter((t) => t.riskScore >= 70).length} At Risk
+            </span>
 
-            {tickets.filter((t) => !t.assignedTo).length}
-            {" "}unassigned
+            <span className="rounded-full border border-border bg-background/40 px-3 py-1 text-xs font-medium">
+              {tickets.filter((t) => t.status === "waiting").length} Waiting
+            </span>
 
-          </p>
+            <span className="rounded-full border border-border bg-background/40 px-3 py-1 text-xs font-medium">
+              {tickets.filter((t) => !t.assignedTo).length} Unassigned
+            </span>
 
+          </div>
         </div>
 
       )}
 
       {/* Tickets Table */}
       <TicketsTable
-  tickets={tickets}
-  page={page}
-  setPage={setPage}
-  pagination={pagination}
-  isCustomer={isCustomer}
-/>
+        tickets={tickets}
+        page={page}
+        setPage={setPage}
+        pagination={pagination}
+        isCustomer={isCustomer}
+      />
     </div>
   );
 }

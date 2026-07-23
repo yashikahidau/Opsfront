@@ -119,7 +119,7 @@ const placeholder =
      return (
           <div
                ref={containerRef}
-               className="relative w-full sm:w-[340px] lg:w-[380px]"
+               className="relative flex-1 lg:flex-none lg:w-[380px]"
           >
                {loading ? (
                     <Loader2 className="absolute left-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-primary" />
@@ -176,7 +176,7 @@ const placeholder =
                          }
                     }}
                     placeholder={placeholder}
-                    className="h-11 w-full rounded-2xl border border-border bg-card/50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/20"
+                    className="h-10 lg:h-11 w-full rounded-2xl border border-border bg-card/50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/20"
                />
 
                {open && (

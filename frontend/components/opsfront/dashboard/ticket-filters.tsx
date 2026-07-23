@@ -58,8 +58,8 @@ function FilterChip({
      return (
           <button
                onClick={onClick}
-               className={cn(
-                    "cursor-pointer rounded-full px-4 py-2 text-sm transition-all duration-200",
+              className={cn(
+  "w-full rounded-full px-3 py-2 text-sm transition-all duration-200 sm:w-auto sm:px-4",
                     active
                          ? "bg-primary text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.18)]"
                          : "border border-border bg-background/40 text-foreground hover:border-primary/20 hover:bg-card"
@@ -78,8 +78,8 @@ export default function TicketFilters({
 
      const { user } = useAuth();
 
-const isCustomer =
-  user?.userType === "customer";
+     const isCustomer =
+          user?.userType === "customer";
 
      const hasFilters =
           filters.search ||
@@ -105,10 +105,10 @@ const isCustomer =
                          <input
                               type="text"
                               placeholder={
-  isCustomer
-    ? "Search your support tickets..."
-    : "Search tickets..."
-}
+                                   isCustomer
+                                        ? "Search your support tickets..."
+                                        : "Search tickets..."
+                              }
                               value={filters.search}
                               autoComplete="off"
                               onChange={(e) =>
@@ -123,28 +123,27 @@ const isCustomer =
                     </div>
 
                     <p className="text-xs text-muted-foreground">
-                        {isCustomer
-  ? "Search by ticket title, description or category."
-  : "Search by title, description, priority, status or category."}
+                         {isCustomer
+                              ? "Search by ticket title, description or category."
+                              : "Search by title, description, priority, status or category."}
                     </p>
 
                </div>
 
-              <div
-  className={`mt-8 ${
-    isCustomer ? "space-y-5" : "space-y-7"
-  }`}
->
+               <div
+                    className={`mt-8 ${isCustomer ? "space-y-5" : "space-y-7"
+                         }`}
+               >
 
                     {/* STATUS */}
 
                     <div>
 
-                         <h3 className="mb-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                         <h3 className="mb-2 text-xs uppercase tracking-[0.22em] text-muted-foreground">
                               Status
                          </h3>
 
-                         <div className="flex flex-wrap gap-2">
+                         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
 
                               {statusFilters.map((filter) => (
 
@@ -169,48 +168,48 @@ const isCustomer =
 
                     {/* PRIORITY */}
 
-                   {!isCustomer && (
+                    {!isCustomer && (
 
-<div>
+                         <div>
 
-     <h3 className="mb-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">
-          Priority
-     </h3>
+                              <h3 className="mb-2 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                                   Priority
+                              </h3>
 
-     <div className="flex flex-wrap gap-2">
+                              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
 
-          {priorityFilters.map((filter) => (
+                                   {priorityFilters.map((filter) => (
 
-               <FilterChip
-                    key={filter.value}
-                    active={filters.priority === filter.value}
-                    onClick={() =>
-                         setFilters((prev) => ({
-                              ...prev,
-                              priority: filter.value,
-                         }))
-                    }
-               >
-                    {filter.label}
-               </FilterChip>
+                                        <FilterChip
+                                             key={filter.value}
+                                             active={filters.priority === filter.value}
+                                             onClick={() =>
+                                                  setFilters((prev) => ({
+                                                       ...prev,
+                                                       priority: filter.value,
+                                                  }))
+                                             }
+                                        >
+                                             {filter.label}
+                                        </FilterChip>
 
-          ))}
+                                   ))}
 
-     </div>
+                              </div>
 
-</div>
+                         </div>
 
-)}
+                    )}
 
                     {/* CATEGORY */}
 
                     <div>
 
-                         <h3 className="mb-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                         <h3 className="mb-2 text-xs uppercase tracking-[0.22em] text-muted-foreground">
                               {isCustomer ? "Issue Type" : "Category"}
                          </h3>
 
-                         <div className="flex flex-wrap gap-2">
+                         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
 
                               {categoryFilters.map((filter) => (
 
@@ -243,14 +242,14 @@ const isCustomer =
 
                          <p className="text-sm font-medium text-foreground">
                               {isCustomer
-  ? "Find your support requests"
-  : "Refine your support queue"}
+                                   ? "Find your support requests"
+                                   : "Refine your support queue"}
                          </p>
 
                          <p className="mt-1 text-sm text-muted-foreground">
                               {isCustomer
-  ? "Use search and filters to quickly find your support tickets."
-  : "Combine search with filters to quickly locate tickets."}
+                                   ? "Use search and filters to quickly find your support tickets."
+                                   : "Combine search with filters to quickly locate tickets."}
                          </p>
 
                     </div>
@@ -268,7 +267,7 @@ const isCustomer =
                               className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-destructive/20 bg-destructive/10 px-5 py-3 text-sm font-medium text-destructive transition-all duration-200 hover:bg-destructive/20"
                          >
                               <RotateCcw className="size-4" />
-                             Clear Filters
+                              Clear Filters
                          </button>
                     )}
 

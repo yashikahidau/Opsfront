@@ -2,10 +2,8 @@
 import Link from "next/link";
 import {
   AlertTriangle,
-  ArrowUpRight,
   Clock3,
   Filter,
-  Flame,
   Search,
   ShieldAlert,
   Sparkles,
@@ -162,30 +160,6 @@ export default function QueuePage() {
     },
   ];
 
-  const signals = [
-    {
-      label: "Total Tickets",
-      value: tickets.length.toString(),
-    },
-    {
-      label: "Critical Tickets",
-      value: tickets
-        .filter((t) => t.priority === "critical")
-        .length.toString(),
-    },
-    {
-      label: "Unassigned",
-      value: tickets
-        .filter((t) => !t.assignedTo)
-        .length.toString(),
-    },
-    {
-      label: "Resolved",
-      value: tickets
-        .filter((t) => t.status === "resolved")
-        .length.toString(),
-    },
-  ];
 
   const aiSuggestions: string[] = [];
 
@@ -244,7 +218,7 @@ export default function QueuePage() {
           <p className="text-[11px] uppercase tracking-[0.28em] text-primary/80">
             Queue cockpit
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">
             Watch the queue by risk, not just status.
           </h2>
           <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground">
@@ -254,20 +228,6 @@ export default function QueuePage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() =>
-              refresh({
-                search,
-                priority,
-                status,
-                assignee,
-                sort,
-              })
-            }
-            className="cursor-pointer rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-card"
-          >
-            Refresh Queue
-          </button>
           <button
             onClick={() =>
               setShowCriticalOnly((v) => !v)
@@ -356,221 +316,221 @@ export default function QueuePage() {
         })}
       </section>
 
-     {/* Search / controls */}
-<section className="rounded-3xl border border-border bg-card/30 p-6">
-  <div className="space-y-6">
+      {/* Search / controls */}
+      <section className="rounded-3xl border border-border bg-card/30 p-6">
+        <div className="space-y-6">
 
-    {/* Search */}
-    <div className="flex items-center gap-4">
-      <div className="flex h-12 flex-1 items-center gap-3 rounded-2xl border border-border bg-background/40 px-4 transition-all duration-200 hover:border-primary/20 focus-within:border-primary/30">
-        <Search className="size-5 shrink-0 text-muted-foreground" />
+          {/* Search */}
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 flex-1 items-center gap-3 rounded-2xl border border-border bg-background/40 px-4 transition-all duration-200 hover:border-primary/20 focus-within:border-primary/30">
+              <Search className="size-5 shrink-0 text-muted-foreground" />
 
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search tickets..."
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tickets..."
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
 
-        {search && (
-          <button
-            onClick={() => setSearch("")}
-            className="grid size-7 place-items-center rounded-full text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
-          >
-            <X className="size-4" />
-          </button>
-        )}
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="grid size-7 place-items-center rounded-full text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
 
-        {refreshing && (
-          <span className="text-xs text-primary animate-pulse">
-            Updating...
-          </span>
-        )}
-      </div>
-    </div>
+              {refreshing && (
+                <span className="text-xs text-primary animate-pulse">
+                  Updating...
+                </span>
+              )}
+            </div>
+          </div>
 
-    {/* Filters */}
-    <div className="flex flex-wrap items-center gap-3">
+          {/* Filters */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:flex lg:flex-wrap lg:items-center">
 
-      <Select
-        value={priority || "all"}
-        onValueChange={(value) => {
-          const newValue =
-            value && value !== "all" ? value : "";
+            <Select
+              value={priority || "all"}
+              onValueChange={(value) => {
+                const newValue =
+                  value && value !== "all" ? value : "";
 
-          setPriority(newValue);
+                setPriority(newValue);
 
-          refresh({
-            search,
-            priority: newValue,
-            status,
-            assignee,
-            sort,
-          });
-        }}
-      >
-        <SelectTrigger className="h-11 w-[190px] rounded-2xl bg-background/40">
-          <SelectValue>
-            {priority
-              ? `Priority: ${priority.charAt(0).toUpperCase() + priority.slice(1)}`
-              : "Priority: All"}
-          </SelectValue>
-        </SelectTrigger>
+                refresh({
+                  search,
+                  priority: newValue,
+                  status,
+                  assignee,
+                  sort,
+                });
+              }}
+            >
+              <SelectTrigger className="h-10 w-full rounded-2xl bg-background/40 text-sm lg:h-11 lg:w-[190px]">
+                <SelectValue>
+                  {priority
+                    ? `Priority: ${priority.charAt(0).toUpperCase() + priority.slice(1)}`
+                    : "Priority: All"}
+                </SelectValue>
+              </SelectTrigger>
 
-        <SelectContent>
-          <SelectItem value="all">All Priorities</SelectItem>
-          <SelectItem value="critical">Critical</SelectItem>
-          <SelectItem value="high">High</SelectItem>
-          <SelectItem value="medium">Medium</SelectItem>
-          <SelectItem value="low">Low</SelectItem>
-        </SelectContent>
-      </Select>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
 
-      <Select
-        value={status || "all"}
-        onValueChange={(value) => {
-          const newValue =
-            value && value !== "all" ? value : "";
+            <Select
+              value={status || "all"}
+              onValueChange={(value) => {
+                const newValue =
+                  value && value !== "all" ? value : "";
 
-          setStatus(newValue);
+                setStatus(newValue);
 
-          refresh({
-            search,
-            priority,
-            status: newValue,
-            assignee,
-            sort,
-          });
-        }}
-      >
-        <SelectTrigger className="h-11 w-[180px] rounded-2xl bg-background/40">
-          <SelectValue>
-            {status
-              ? `Status: ${status}`
-              : "Status: All"}
-          </SelectValue>
-        </SelectTrigger>
+                refresh({
+                  search,
+                  priority,
+                  status: newValue,
+                  assignee,
+                  sort,
+                });
+              }}
+            >
+              <SelectTrigger className="h-11 w-full rounded-2xl bg-background/40 lg:w-[180px]">
+                <SelectValue>
+                  {status
+                    ? `Status: ${status}`
+                    : "Status: All"}
+                </SelectValue>
+              </SelectTrigger>
 
-        <SelectContent>
-          <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="open">Open</SelectItem>
-          <SelectItem value="in-progress">In Progress</SelectItem>
-          <SelectItem value="waiting">Waiting</SelectItem>
-          <SelectItem value="resolved">Resolved</SelectItem>
-        </SelectContent>
-      </Select>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="waiting">Waiting</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+              </SelectContent>
+            </Select>
 
-      <Select
-        value={sort}
-        onValueChange={(value) => {
-          const newValue = value ?? "newest";
+            <Select
+              value={sort}
+              onValueChange={(value) => {
+                const newValue = value ?? "newest";
 
-          setSort(newValue);
+                setSort(newValue);
 
-          refresh({
-            search,
-            priority,
-            status,
-            assignee,
-            sort: newValue,
-          });
-        }}
-      >
-        <SelectTrigger className="h-11 w-[170px] rounded-2xl bg-background/40">
-          <SelectValue>
-            {`Sort: ${sort.charAt(0).toUpperCase() + sort.slice(1)}`}
-          </SelectValue>
-        </SelectTrigger>
+                refresh({
+                  search,
+                  priority,
+                  status,
+                  assignee,
+                  sort: newValue,
+                });
+              }}
+            >
+              <SelectTrigger className="h-11 w-full rounded-2xl bg-background/40 lg:w-[170px]">
+                <SelectValue>
+                  {`Sort: ${sort.charAt(0).toUpperCase() + sort.slice(1)}`}
+                </SelectValue>
+              </SelectTrigger>
 
-        <SelectContent>
-          <SelectItem value="newest">Newest</SelectItem>
-          <SelectItem value="oldest">Oldest</SelectItem>
-          <SelectItem value="priority">Priority</SelectItem>
-          <SelectItem value="status">Status</SelectItem>
-        </SelectContent>
-      </Select>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="oldest">Oldest</SelectItem>
+                <SelectItem value="priority">Priority</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
 
-      <Select
-        value={assignee || "all"}
-        onValueChange={(value) => {
-          const newValue =
-            value && value !== "all" ? value : "";
+            <Select
+              value={assignee || "all"}
+              onValueChange={(value) => {
+                const newValue =
+                  value && value !== "all" ? value : "";
 
-          setAssignee(newValue);
+                setAssignee(newValue);
 
-          refresh({
-            search,
-            priority,
-            status,
-            assignee: newValue,
-            sort,
-          });
-        }}
-      >
-        <SelectTrigger className="h-11 w-[220px] rounded-2xl bg-background/40">
-          <SelectValue>
-            {assignee
-              ? `Assignee`
-              : "Assignee: All"}
-          </SelectValue>
-        </SelectTrigger>
+                refresh({
+                  search,
+                  priority,
+                  status,
+                  assignee: newValue,
+                  sort,
+                });
+              }}
+            >
+              <SelectTrigger className="h-11 w-full rounded-2xl bg-background/40 lg:w-[220px]">
+                <SelectValue>
+                  {assignee
+                    ? `Assignee`
+                    : "Assignee: All"}
+                </SelectValue>
+              </SelectTrigger>
 
-        <SelectContent className="max-h-72">
-          <SelectItem value="all">
-            All Assignees
-          </SelectItem>
+              <SelectContent className="max-h-72">
+                <SelectItem value="all">
+                  All Assignees
+                </SelectItem>
 
-          {users
-            .filter((u) => u.role === "agent")
-            .map((u) => (
-              <SelectItem
-                key={u._id}
-                value={u._id}
-              >
-                {u.name}
-              </SelectItem>
-            ))}
-        </SelectContent>
-      </Select>
+                {users
+                  .filter((u) => u.role === "agent")
+                  .map((u) => (
+                    <SelectItem
+                      key={u._id}
+                      value={u._id}
+                    >
+                      {u.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
 
-      <button
-        onClick={() => {
-          setSearch("");
-          setPriority("");
-          setStatus("");
-          setAssignee("");
-          setSort("newest");
+            <button
+              onClick={() => {
+                setSearch("");
+                setPriority("");
+                setStatus("");
+                setAssignee("");
+                setSort("newest");
 
-          refresh({
-            search: "",
-            priority: "",
-            status: "",
-            assignee: "",
-            sort: "newest",
-          });
-        }}
-        className="ml-auto inline-flex h-11 items-center gap-2 rounded-2xl border border-border bg-background/40 px-5 text-sm font-medium transition-all duration-200 hover:border-primary/20 hover:bg-card"
-      >
-        <Filter className="size-4" />
-        Clear Filters
-      </button>
-    </div>
+                refresh({
+                  search: "",
+                  priority: "",
+                  status: "",
+                  assignee: "",
+                  sort: "newest",
+                });
+              }}
+              className="col-span-2 flex h-11 items-center justify-center gap-2 rounded-2xl border border-border bg-background/40 text-sm font-medium transition-all duration-200 hover:border-primary/20 hover:bg-card lg:ml-auto lg:col-span-1 p-2"
+            >
+              <Filter className="size-4" />
+              Clear Filters
+            </button>
+          </div>
 
-    {/* Live Queue */}
-    <div className="rounded-2xl border border-primary/15 bg-primary/[0.05] px-5 py-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        Live Queue State
-      </p>
+          {/* Live Queue */}
+          <div className="rounded-2xl border border-primary/15 bg-primary/[0.05] px-5 py-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              Live Queue State
+            </p>
 
-      <p className="mt-2 text-sm font-semibold text-foreground">
-        {stats
-          ? `${stats.critical} Critical • ${stats.waiting} Waiting • ${stats.unassigned} Unassigned`
-          : "Loading..."}
-      </p>
-    </div>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              {stats
+                ? `${stats.critical} Critical • ${stats.waiting} Waiting • ${stats.unassigned} Unassigned`
+                : "Loading..."}
+            </p>
+          </div>
 
-  </div>
-</section>
+        </div>
+      </section>
 
       {/* Main content */}
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
@@ -688,7 +648,7 @@ export default function QueuePage() {
                           </div>
                         </div>
 
-                        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1.2fr]">
+                        <div className="grid gap-4 lg:grid-cols-2">
                           <div className="rounded-2xl border border-border bg-background/35 px-4 py-3">
                             <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
                               Risk score
@@ -740,15 +700,6 @@ export default function QueuePage() {
                                 "Unassigned"}
                             </p>
                           </div>
-
-                          <div className="rounded-2xl border border-border bg-background/35 px-4 py-3">
-                            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                              Why this is risky
-                            </p>
-                            <p className="mt-2 text-sm leading-6 text-foreground">
-                              {ticket.description}
-                            </p>
-                          </div>
                         </div>
                       </div>
                     </Link>
@@ -770,9 +721,6 @@ export default function QueuePage() {
                 </p>
               </div>
 
-              <button className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
-                View all lanes
-              </button>
             </div>
 
             <div className="mt-5 grid gap-4 lg:grid-cols-3">
@@ -800,13 +748,14 @@ export default function QueuePage() {
                   <div className="mt-4 space-y-2.5">
                     {lane.items.length === 0 ? (
                       <div className="rounded-xl border border-dashed border-border bg-background/40 px-3 py-6 text-center text-sm text-muted-foreground">
-                        No tickets
+                        Queue clear
                       </div>
                     ) : (
                       lane.items.slice(0, 3).map((item) => (
-                        <div
+                        <Link
                           key={item._id}
-                          className="rounded-xl border border-border bg-background/40 px-3 py-2.5 text-sm leading-6 text-foreground"
+                          href={`/dashboard/tickets/${item._id}`}
+                          className="block rounded-xl border border-border bg-background/40 px-3 py-2.5 text-sm leading-6 text-foreground transition hover:border-primary/15 hover:bg-card"
                         >
                           <div>
                             <p className="font-medium">
@@ -814,11 +763,11 @@ export default function QueuePage() {
                             </p>
 
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {item.assignedTo?.name ??
-                                "Unassigned"}
+                          {item.assignedTo?.name ?? "Unassigned"} •{" "}
+{item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
                             </p>
                           </div>
-                        </div>
+                        </Link>
                       ))
                     )}
                   </div>
@@ -830,83 +779,6 @@ export default function QueuePage() {
 
         {/* Right */}
         <div className="space-y-6">
-          {/* Command card */}
-          <div className="rounded-3xl border border-primary/15 bg-primary/[0.05] p-6">
-            <div className="flex items-start gap-3">
-              <div className="rounded-2xl border border-primary/20 bg-primary/10 p-2.5 text-primary">
-                <Flame className="size-5" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Queue command view
-                </p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Opsfront keeps the queue sorted by forward-looking risk instead
-                  of static status so the team can intervene before tickets miss
-                  their SLA window.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              <SignalCard
-                label="Critical Tickets"
-                value={
-                  tickets
-                    .filter((t) => t.priority === "critical")
-                    .length.toString()
-                }
-                tone="destructive"
-              />
-
-              <SignalCard
-                label="Open Tickets"
-                value={
-                  tickets
-                    .filter((t) => t.status === "open")
-                    .length.toString()
-                }
-                tone="primary"
-              />
-
-              <SignalCard
-                label="Unassigned"
-                value={
-                  tickets
-                    .filter((t) => !t.assignedTo)
-                    .length.toString()
-                }
-              />
-            </div>
-          </div>
-
-          {/* Signal breakdown */}
-          <div className="rounded-3xl border border-border bg-card/30 p-5">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Queue signals
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Live operational metrics from the current queue
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {signals.map((signal) => (
-                <div
-                  key={signal.label}
-                  className="rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10"
-                >
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
-                    {signal.label}
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-foreground">
-                    {signal.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* AI guidance */}
           <div className="rounded-3xl border border-border bg-card/30 p-5">
@@ -919,7 +791,7 @@ export default function QueuePage() {
                   AI queue guidance
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Suggested next actions based on live queue state
+                  Suggested actions for the current queue.
                 </p>
               </div>
             </div>
@@ -934,35 +806,6 @@ export default function QueuePage() {
             </div>
           </div>
 
-          {/* Quick actions */}
-          <div className="rounded-3xl border border-border bg-card/30 p-5">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Quick actions
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Common queue interventions
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <QuickAction
-                label={`Open Tickets (${stats?.open ?? 0})`}
-              />
-
-              <QuickAction
-                label={`Critical Tickets (${stats?.critical ?? 0})`}
-              />
-
-              <QuickAction
-                label={`Waiting Tickets (${stats?.waiting ?? 0})`}
-              />
-
-              <QuickAction
-                label={`Resolved Tickets (${stats?.resolved ?? 0})`}
-              />
-            </div>
-          </div>
         </div>
       </section>
     </div>
@@ -1049,48 +892,11 @@ function StatusBadge({
   );
 }
 
-function SignalCard({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  tone?: "default" | "primary" | "destructive";
-}) {
-  const valueClass =
-    tone === "primary"
-      ? "text-primary"
-      : tone === "destructive"
-        ? "text-destructive"
-        : "text-foreground";
-
-  return (
-    <div className="rounded-2xl border border-border bg-card/50 p-4">
-      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
-        {label}
-      </p>
-      <p className={`mt-2 font-mono text-2xl font-semibold ${valueClass}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
 function AiAction({ text }: { text: string }) {
   return (
-    <button className="flex w-full cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background/35 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/15 hover:bg-card">
+    <div className="flex w-full items-start gap-3 rounded-2xl border border-border bg-background/35 p-4">
       <div className="mt-1 size-2 rounded-full bg-primary shadow-[0_0_10px_rgba(255,176,72,0.8)]" />
       <span className="text-sm leading-6 text-foreground">{text}</span>
-    </button>
-  );
-}
-
-function QuickAction({ label }: { label: string }) {
-  return (
-    <button className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-border bg-background/35 px-4 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/15 hover:bg-card">
-      <span className="text-sm text-foreground">{label}</span>
-      <ArrowUpRight className="size-4 text-muted-foreground" />
-    </button>
+    </div>
   );
 }

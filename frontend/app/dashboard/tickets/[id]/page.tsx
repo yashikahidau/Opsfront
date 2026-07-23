@@ -3,10 +3,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Bot,
-  CheckCircle2,
-  Clock3,
   MessageSquare,
-  MoreHorizontal,
   ShieldAlert,
   Sparkles,
 } from "lucide-react";
@@ -64,9 +61,9 @@ function formatDate(date: string) {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
-    year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   }).format(new Date(date));
 }
 
@@ -224,7 +221,7 @@ export default function TicketDetailPage() {
             >
               {ticket.status === "resolved"
                 ? "Resolved"
-                : "Resolve ticket"}
+                : "Resolve Ticket"}
             </button>
           )}
         </div>
@@ -232,12 +229,12 @@ export default function TicketDetailPage() {
 
       {/* Hero ticket summary */}
       <section
-  className={
-    isCustomer
-      ? "space-y-6"
-      : "grid gap-6 xl:grid-cols-[1.25fr_0.75fr]"
-  }
->
+        className={
+          isCustomer
+            ? "space-y-6"
+            : "grid gap-6 xl:grid-cols-[1.25fr_0.75fr]"
+        }
+      >
         <div className="rounded-3xl border border-border bg-card/30 p-6 sm:p-7">
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -245,19 +242,13 @@ export default function TicketDetailPage() {
                 <p className="text-[11px] uppercase tracking-[0.28em] text-primary/80">
                   {ticket.category.toUpperCase()}
                 </p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">
                   {ticket.title}
                 </h2>
                 <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
                   {ticket.description}
                 </p>
               </div>
-
-              {!isCustomer && (
-                <button className="cursor-pointer rounded-2xl border border-border bg-background/40 p-2.5 text-muted-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card hover:text-foreground">
-                  <MoreHorizontal className="size-5" />
-                </button>
-              )}
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -325,15 +316,15 @@ export default function TicketDetailPage() {
 
             <div
               className={`grid gap-4 pt-2 ${isCustomer
-                  ? "sm:grid-cols-3"
-                  : "sm:grid-cols-2 xl:grid-cols-4"
+                ? "sm:grid-cols-3"
+                : "sm:grid-cols-2 xl:grid-cols-4"
                 }`}
             >
               <MetaCard
-  label="Submitted By"
-  value={ticket.createdBy.name}
-  sub=""
-/>
+                label="Submitted By"
+                value={ticket.createdBy.name}
+                sub=""
+              />
               {!isCustomer && (
                 <MetaCard
                   label="Assigned to"
@@ -392,46 +383,10 @@ export default function TicketDetailPage() {
                 label="Time to breach"
                 value={
                   ticket.slaDeadline
-                    ? new Date(ticket.slaDeadline).toLocaleString()
+                    ? formatDate(ticket.slaDeadline)
                     : "No SLA"
                 }
               />
-              <SignalRow
-                label="Queue pressure"
-                value={
-                  ticket.riskScore >= 70
-                    ? "High"
-                    : ticket.riskScore >= 40
-                      ? "Medium"
-                      : "Low"
-                }
-              />
-              <SignalRow
-                label="Requester impact"
-                value={ticket.priority.toUpperCase()}
-              />
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-border bg-card/50 p-4">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 rounded-xl border border-primary/20 bg-primary/10 p-2 text-primary">
-                  <Sparkles className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    AI triage summary
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {ticket.riskScore >= 90
-                      ? "This ticket is in a critical state and requires immediate attention because the risk score is extremely high."
-                      : ticket.riskScore >= 70
-                        ? "This ticket has elevated operational risk and should be prioritized to avoid SLA breach."
-                        : ticket.riskScore >= 40
-                          ? "This ticket should be monitored closely. Current indicators suggest moderate operational risk."
-                          : "This ticket is currently healthy with no significant operational risk indicators."}
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -470,9 +425,12 @@ export default function TicketDetailPage() {
 
               <button
                 onClick={() => commentRef.current?.focus()}
-                className="cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-2 text-sm hover:border-primary/20"
+                className="cursor-pointer rounded-xl border border-border bg-background/40 px-3 py-1.5 text-sm transition hover:border-primary/20 hover:bg-card"
               >
-                Reply
+                <>
+                  Reply
+                  <span className="hidden sm:inline"> →</span>
+                </>
               </button>
 
             </div>
@@ -504,39 +462,34 @@ export default function TicketDetailPage() {
                     className="rounded-2xl border border-border bg-background/35 p-4"
                   >
 
-                    <div className="flex justify-between">
+                    <div className="flex items-start gap-3">
 
-                      <div className="flex items-center gap-3">
+                      <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                        {comment.author.name
+                          .split(" ")
+                          .map((p) => p[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </div>
 
-                        <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
-                          {comment.author.name
-                            .split(" ")
-                            .map((p) => p[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </div>
+                      <div className="min-w-0 flex-1">
 
-                        <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {comment.author.name}
+                        </p>
 
-                          <p className="text-sm font-medium">
-                            {comment.author.name}
-                          </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {comment.author.email}
+                        </p>
 
-                          <p className="text-xs text-muted-foreground">
-                            {comment.author.email}
-                          </p>
-
-                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatDate(comment.createdAt)}
+                        </p>
 
                       </div>
 
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(comment.createdAt).toLocaleString()}
-                      </p>
-
                     </div>
-
-                    <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
                       {comment.message}
                     </p>
 
@@ -555,28 +508,16 @@ export default function TicketDetailPage() {
                 disabled={posting}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                rows={4}
+                rows={3}
                 placeholder={
                   isCustomer
                     ? "Type your message to the support team..."
-                    : "Add an internal update or reply..."
+                    : "Write an update..."
                 }
                 className="w-full resize-none rounded-2xl border border-border bg-background/50 px-4 py-3"
               />
 
-              <div className="mt-4 flex justify-between items-center">
-
-                {!isCustomer && (
-
-                  <button
-                    disabled
-                    className="inline-flex items-center gap-2 rounded-2xl border border-border bg-background/40 px-3 py-2 text-sm"
-                  >
-                    <Bot className="size-4" />
-                    AI Draft
-                  </button>
-
-                )}
+              <div className="mt-4 flex justify-end">
 
                 <button
                   onClick={handlePostComment}
@@ -634,7 +575,7 @@ export default function TicketDetailPage() {
 
                   <div
                     key={item._id}
-                    className="flex gap-4 rounded-2xl border border-border bg-background/35 p-4"
+                    className="flex gap-3 rounded-2xl border border-border bg-background/35 p-3"
                   >
 
                     <div className="grid size-9 place-items-center rounded-full bg-primary/10 text-primary">
@@ -647,18 +588,15 @@ export default function TicketDetailPage() {
 
                     </div>
 
-                    <div>
-
-                      <p className="text-sm font-medium">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium leading-5">
                         {item.message}
                       </p>
 
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {item.user.name} • {new Date(item.createdAt).toLocaleString()}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {item.user.name} • {formatDate(item.createdAt)}
                       </p>
-
                     </div>
-
                   </div>
 
                 ))
@@ -789,25 +727,6 @@ export default function TicketDetailPage() {
 
                 </div>
 
-                <ActionCard
-                  title="Escalation State"
-                  value={
-                    ticket.riskScore >= 90
-                      ? "Critical"
-                      : ticket.riskScore >= 70
-                        ? "At Risk"
-                        : ticket.riskScore >= 40
-                          ? "Watch"
-                          : "Healthy"
-                  }
-                  helper={
-                    ticket.slaDeadline
-                      ? `SLA: ${new Date(ticket.slaDeadline).toLocaleString()}`
-                      : "No SLA assigned"
-                  }
-                  danger={ticket.riskScore >= 70}
-                />
-
               </div>
 
             </div>
@@ -834,14 +753,9 @@ export default function TicketDetailPage() {
                   label="SLA Deadline"
                   value={
                     ticket.slaDeadline
-                      ? new Date(ticket.slaDeadline).toLocaleString()
+                      ? formatDate(ticket.slaDeadline)
                       : "No SLA"
                   }
-                />
-
-                <SlaRow
-                  label="Created"
-                  value={formatDate(ticket.createdAt)}
                 />
 
                 <SlaRow
@@ -955,7 +869,11 @@ function MetaCard({
         {label}
       </p>
       <p className="mt-2 text-sm font-medium text-foreground">{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+      {sub && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {sub}
+        </p>
+      )}
     </div>
   );
 }

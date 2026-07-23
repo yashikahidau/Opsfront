@@ -154,12 +154,12 @@ function DashboardShell({ children }: { children: ReactNode }) {
     {user?.userType !== "customer" ? (
       <div className="min-w-0">
         <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
-          Workspace
+          Operations Dashboard
         </p>
 
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <h2 className="truncate text-base font-semibold text-foreground sm:text-lg">
-            {user?.workspaceName || "Opsfront Workspace"}
+            Agent Workspace
           </h2>
 
           <span className="rounded-full border border-border bg-card/70 px-2.5 py-1 text-[11px] font-medium capitalize text-muted-foreground">
