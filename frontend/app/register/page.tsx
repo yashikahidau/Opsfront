@@ -72,7 +72,7 @@ export default function RegisterPage() {
 
   if (bootLoading) {
     return (
-      <main className="grid min-h-screen place-items-center bg-background">
+      <main className="grid min-h-screen place-items-center bg-background px-4">
         <div className="rounded-full border border-border bg-card/40 px-5 py-2 text-sm text-muted-foreground">
           Loading workspace...
         </div>
@@ -93,22 +93,22 @@ export default function RegisterPage() {
 
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
 
-      <div className="absolute left-1/2 top-0 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+      <div className="absolute left-1/2 top-0 h-[280px] w-[280px] sm:h-[420px] sm:w-[420px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-5 py-8">
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
 
         <div className="w-full max-w-md">
 
           {/* Logo */}
 
-          <div className="mb-8 flex justify-center">
-            <div className="flex items-center gap-3 rounded-full border border-border bg-card/40 px-5 py-3">
+          <div className="mb-6 sm:mb-8 flex justify-center">
+            <div className="flex items-center gap-3 rounded-full border border-border bg-card/40 px-4 py-2.5 sm:px-5 sm:py-3">
 
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 font-semibold text-primary">
+              <div className="grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-full bg-primary/10 font-semibold text-primary text-sm sm:text-base">
                 O
               </div>
 
-              <span className="font-semibold tracking-tight">
+              <span className="font-semibold tracking-tight text-sm sm:text-base">
                 Opsfront
               </span>
 
@@ -117,19 +117,19 @@ export default function RegisterPage() {
 
           {/* Card */}
 
-          <div className="rounded-[32px] border border-border bg-card/45 p-7 shadow-[0_24px_100px_rgba(0,0,0,0.45)] backdrop-blur">
+          <div className="rounded-2xl sm:rounded-[32px] border border-border bg-card/45 p-5 sm:p-7 shadow-[0_24px_100px_rgba(0,0,0,0.45)] backdrop-blur">
 
             <div className="text-center">
 
-              <p className="text-sm font-medium text-primary">
+              <p className="text-xs sm:text-sm font-medium text-primary">
                 Create account
               </p>
 
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+              <h1 className="mt-1.5 sm:mt-2 text-2xl sm:text-3xl font-semibold tracking-tight">
                 Start your workspace
               </h1>
 
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              <p className="mt-2 sm:mt-3 text-xs sm:text-sm leading-5 sm:leading-6 text-muted-foreground">
                 Create your Opsfront workspace and start
                 managing tickets, SLAs and teams from
                 one modern dashboard.
@@ -137,7 +137,7 @@ export default function RegisterPage() {
 
             </div>
 
-            <div className="mt-8">
+            <div className="mt-6 sm:mt-8">
 
               <RegisterForm
                 onSubmit={handleRegister}

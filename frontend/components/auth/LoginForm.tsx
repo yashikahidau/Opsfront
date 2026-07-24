@@ -68,9 +68,9 @@ export default function LoginForm({
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="space-y-6"
+      className="space-y-5"
     >
-      <div className="space-y-5">
+      <div className="space-y-4 sm:space-y-5">
 
         <FormInput
           label="Work email"
@@ -166,11 +166,11 @@ export default function LoginForm({
 
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-4">
           <div className="h-px flex-1 bg-border" />
 
-          <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             OR
           </span>
 
@@ -182,7 +182,7 @@ export default function LoginForm({
         </div>
       </div>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-xs sm:text-sm text-muted-foreground">
         Don't have an account?{" "}
         <Link
           href="/register"

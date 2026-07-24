@@ -87,9 +87,9 @@ export default function LoginPage() {
 
       <div className="absolute left-1/2 top-0 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-5 py-8">
+      <div className="relative z-10 flex min-h-screen items-start justify-center px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:items-center sm:px-5 sm:py-8">
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-[430px]">
 
           <div className="mb-8 flex justify-center">
 
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
           </div>
 
-          <div className="rounded-[32px] border border-border bg-card/45 p-7 shadow-[0_24px_100px_rgba(0,0,0,0.45)] backdrop-blur">
+          <div className="rounded-[28px] border border-border bg-card/45 p-4 sm:p-7 shadow-[0_24px_100px_rgba(0,0,0,0.45)] backdrop-blur sm:rounded-[32px] sm:p-7">
 
             <div className="text-center">
 
@@ -115,17 +115,17 @@ export default function LoginPage() {
                 Sign in
               </p>
 
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+              <h1 className="mt-2 text-[1.6rem] font-semibold leading-tight tracking-tight sm:text-3xl">
                 Access your workspace
               </h1>
 
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              <p className="mt-3 hidden text-sm leading-6 text-muted-foreground sm:block">
                 Monitor tickets, queues, SLAs, agents and analytics from one workspace.
               </p>
 
             </div>
 
-            <div className="mt-8">
+            <div className="mt-5 sm:mt-8">
 
               <LoginForm
                 onSubmit={handleLogin}

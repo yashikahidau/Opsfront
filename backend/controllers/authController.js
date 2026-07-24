@@ -214,6 +214,71 @@ const getMe = async (req, res) => {
 };
 
 
+// @desc    Update Profile
+// @route   PATCH /api/auth/profile
+// @access  Private
+
+const updateProfile = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Name and email are required",
+      });
+    }
+
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (trimmedName.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must be at least 2 characters",
+      });
+    }
+
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
+    const existingUser = await User.findOne({
+      email: trimmedEmail,
+      _id: { $ne: req.user._id },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "Email is already in use",
+      });
+    }
+
+    req.user.name = trimmedName;
+    req.user.email = trimmedEmail;
+
+    await req.user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: sanitizeUser(req.user),
+    });
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating profile",
+    });
+  }
+};
+
+
 // @desc    Forgot Password
 // @route   POST /api/auth/forgot-password
 // @access  Public
@@ -364,4 +429,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   getMe,
+  updateProfile,
 };

@@ -28,8 +28,8 @@ export default function ProfileDropdown() {
     user?.userType === "customer"
       ? "Customer"
       : user?.role
-      ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
-      : "User";
+        ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+        : "User";
 
   return (
     <DropdownMenu>
@@ -42,14 +42,18 @@ export default function ProfileDropdown() {
             </div>
 
             <div className="leading-tight text-left">
-              <p className="text-sm font-medium text-foreground">
-                {user?.name}
-              </p>
+  <p className="text-sm font-medium text-foreground">
+    {user?.name}
+  </p>
 
-              <p className="text-xs text-muted-foreground">
-                {displayRole}
-              </p>
-            </div>
+  <p className="text-xs text-muted-foreground">
+    {displayRole}
+  </p>
+
+  <p className="text-[11px] text-muted-foreground/70">
+    {user?.workspaceName}
+  </p>
+</div>
           </div>
 
           {/* Mobile */}
@@ -71,16 +75,34 @@ export default function ProfileDropdown() {
   <p className="mt-1 text-xs text-muted-foreground">
     {user?.email}
   </p>
+
+  <div className="mt-3 flex items-center justify-between rounded-xl border border-border bg-card/40 px-3 py-2">
+    <div>
+      <p className="text-xs font-medium text-foreground">
+        {displayRole}
+      </p>
+
+      <p className="text-[11px] text-muted-foreground">
+        {user?.workspaceName}
+      </p>
+    </div>
+  </div>
 </div>
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() =>
+            router.push("/dashboard/settings#my-profile")
+          }
+        >
           <User className="mr-2 size-4" />
           My Profile
         </DropdownMenuItem>
 
-        <DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => router.push("/dashboard/settings")}
+        >
           <Settings className="mr-2 size-4" />
           Settings
         </DropdownMenuItem>

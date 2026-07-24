@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   GoogleLogin,
@@ -22,6 +22,34 @@ export default function GoogleButton({
 
   const [error, setError] = useState("");
 
+  const containerRef = useRef<HTMLDivElement>(null);
+const [buttonWidth, setButtonWidth] = useState(350);
+
+useEffect(() => {
+  const updateWidth = () => {
+    if (containerRef.current) {
+      setButtonWidth(
+  Math.max(200, Math.floor(containerRef.current.offsetWidth))
+);
+    }
+  };
+
+  updateWidth();
+
+  const observer = new ResizeObserver(updateWidth);
+
+  if (containerRef.current) {
+    observer.observe(containerRef.current);
+  }
+
+  window.addEventListener("resize", updateWidth);
+
+  return () => {
+    observer.disconnect();
+    window.removeEventListener("resize", updateWidth);
+  };
+}, []);
+
   async function handleSuccess(
     credentialResponse: CredentialResponse
   ) {
@@ -39,8 +67,8 @@ export default function GoogleButton({
   }
 
   return (
-    <div className={className}>
-      <div className="flex justify-center">
+    <div className={`w-full ${className ?? ""}`}>
+      <div ref={containerRef} className="w-full">
         <GoogleLogin
           onSuccess={handleSuccess}
           onError={() =>
@@ -49,7 +77,7 @@ export default function GoogleButton({
           theme="filled_black"
           shape="pill"
           text="continue_with"
-          width="350"
+          width={buttonWidth}
         />
       </div>
 

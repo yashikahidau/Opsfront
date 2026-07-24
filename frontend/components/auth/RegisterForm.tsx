@@ -75,9 +75,9 @@ export default function RegisterForm({
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="space-y-6"
+      className="space-y-5 sm:space-y-6"
     >
-      <div className="space-y-5">
+      <div className="space-y-4 sm:space-y-5">
 
         <FormInput
           label="Full name"
@@ -147,7 +147,7 @@ export default function RegisterForm({
 
         <Checkbox
           label={
-            <>
+            <span className="text-xs sm:text-sm">
               I agree to the{" "}
               <span className="text-primary">
                 Terms of Service
@@ -156,7 +156,7 @@ export default function RegisterForm({
               <span className="text-primary">
                 Privacy Policy
               </span>
-            </>
+            </span>
           }
           checked={form.values.acceptedTerms}
           error={
@@ -181,6 +181,7 @@ export default function RegisterForm({
         <Button
           type="submit"
           size="auth"
+          className="w-full"
           disabled={form.loading}
         >
           {form.loading ? (
@@ -199,20 +200,19 @@ export default function RegisterForm({
         <div className="flex items-center gap-4">
           <div className="h-px flex-1 bg-border" />
 
-          <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+          <span className="text-[10px] sm:text-xs uppercase tracking-[0.24em] text-muted-foreground">
             OR
           </span>
 
           <div className="h-px flex-1 bg-border" />
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex justify-center w-full">
           <GoogleButton />
         </div>
       </div>
 
-
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-xs sm:text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link
           href="/login"
