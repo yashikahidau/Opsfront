@@ -1,4 +1,5 @@
 "use client";
+
 import {
   Bell,
   ChevronRight,
@@ -31,13 +32,7 @@ const slaDefaults = [
 ];
 
 export default function SettingsPage() {
-  const {
-    loading,
-    saving,
-    settings,
-    saveSettings,
-  } = useSettings();
-
+  const { loading, saving, settings, saveSettings } = useSettings();
   const { user, refreshUser } = useAuth();
   const router = useRouter();
 
@@ -47,13 +42,12 @@ export default function SettingsPage() {
   });
 
   const isInternal = user?.userType === "internal";
-  const isCustomer = user?.userType === "customer";
 
   useEffect(() => {
     if (user) {
       setProfileForm({
-        name: user.name,
-        email: user.email,
+        name: user.name || "",
+        email: user.email || "",
       });
     }
   }, [user]);
@@ -73,13 +67,10 @@ export default function SettingsPage() {
       });
 
       toast.success(response.message);
-
       await refreshUser();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to update profile."
+        error instanceof Error ? error.message : "Failed to update profile."
       );
     }
   };
@@ -99,14 +90,14 @@ export default function SettingsPage() {
     if (!settings) return;
 
     setForm({
-      workspaceName: settings.workspaceName,
-      supportEmail: settings.supportEmail,
-      primaryTeam: settings.primaryTeam,
-      timezone: settings.timezone,
+      workspaceName: settings.workspaceName || "",
+      supportEmail: settings.supportEmail || "",
+      primaryTeam: settings.primaryTeam || "",
+      timezone: settings.timezone || "",
       autoAssign: settings.automation.autoAssign,
       autoEscalation: settings.automation.autoEscalation,
-      queueFallback: settings.automation.queueFallback,
-      riskInterval: settings.automation.riskInterval,
+      queueFallback: settings.automation.queueFallback || "",
+      riskInterval: settings.automation.riskInterval || "",
     });
   }, [settings]);
 
@@ -118,7 +109,6 @@ export default function SettingsPage() {
       form.supportEmail !== settings.supportEmail ||
       form.primaryTeam !== settings.primaryTeam ||
       form.timezone !== settings.timezone ||
-
       form.autoAssign !== settings.automation.autoAssign ||
       form.autoEscalation !== settings.automation.autoEscalation ||
       form.queueFallback !== settings.automation.queueFallback ||
@@ -133,18 +123,19 @@ export default function SettingsPage() {
       </div>
     );
   }
+
   return (
-    <div className="space-y-7">
+    <div className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto">
       {/* Header */}
-      <section className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+      <section className="flex flex-col gap-4 sm:gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-2xl">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-primary/80">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-primary/80 font-medium">
             Workspace settings
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             Configure how Opsfront behaves for your team.
           </h2>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground">
+          <p className="mt-2 max-w-2xl text-sm sm:text-base leading-relaxed text-muted-foreground">
             Manage workspace details, notifications, automations, and security
             preferences from one place.
           </p>
@@ -172,46 +163,42 @@ export default function SettingsPage() {
             }
           }}
           disabled={saving || !hasChanges}
-          className={`inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 ${saving || !hasChanges
-            ? "cursor-not-allowed opacity-60"
-            : "cursor-pointer hover:-translate-y-0.5 hover:opacity-95"
-            }`}
+          className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-[0_0_24px_rgba(255,176,72,0.2)] transition-all duration-200 ${
+            saving || !hasChanges
+              ? "cursor-not-allowed opacity-60"
+              : "cursor-pointer hover:-translate-y-0.5 hover:opacity-95"
+          }`}
         >
-          <Save className="size-4" />
-          {saving
-            ? "Saving..."
-            : hasChanges
-              ? "Save changes"
-              : "Saved"}
+          <Save className="size-4 shrink-0" />
+          {saving ? "Saving..." : hasChanges ? "Save changes" : "Saved"}
         </button>
       </section>
 
       {/* Main layout */}
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
         {/* Left side */}
         <div className="space-y-6">
-
           {/* My Profile */}
           <div
             id="my-profile"
-            className="rounded-3xl border border-border bg-card/30 p-5 sm:p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-xl font-semibold text-primary">
-                {user?.name?.charAt(0).toUpperCase()}
+            className="rounded-3xl border border-border bg-card/30 p-4 sm:p-6"
+          >
+            <div className="flex items-center sm:items-start gap-4">
+              <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg sm:text-xl font-semibold text-primary">
+                {user?.name?.charAt(0).toUpperCase() || "U"}
               </div>
 
-              <div className="flex-1">
-                <p className="text-lg font-semibold text-foreground">
+              <div className="min-w-0 flex-1">
+                <p className="text-base sm:text-lg font-semibold text-foreground truncate">
                   My Profile
                 </p>
-
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-muted-foreground">
                   Manage your personal account information.
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Name
@@ -253,7 +240,7 @@ export default function SettingsPage() {
                 value={
                   user?.userType === "customer"
                     ? "Customer"
-                    : (user?.role ?? "-")
+                    : user?.role ?? "-"
                 }
               />
 
@@ -263,21 +250,23 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-col sm:flex-row flex-wrap gap-3">
               <button
                 onClick={() =>
                   router.push(
-                    `/forgot-password?email=${encodeURIComponent(user?.email ?? "")}`
+                    `/forgot-password?email=${encodeURIComponent(
+                      user?.email ?? ""
+                    )}`
                   )
                 }
-                className="rounded-full border border-border bg-background/40 px-5 py-2 text-sm font-medium text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card"
+                className="w-full sm:w-auto text-center rounded-full border border-border bg-background/40 px-5 py-2.5 text-sm font-medium text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card"
               >
                 Send Password Reset Link
               </button>
 
               <button
                 onClick={handleProfileSave}
-                className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
+                className="w-full sm:w-auto text-center rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
               >
                 Save Changes
               </button>
@@ -285,84 +274,80 @@ export default function SettingsPage() {
           </div>
 
           {isInternal && (
-            <>
-              {/* Workspace profile */}
-
-              <div className="rounded-3xl border border-border bg-card/30 p-5 sm:p-6">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground">
-                    <Sparkles className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Workspace profile
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Basic workspace identity and support contact information
-                    </p>
-                  </div>
+            <div className="rounded-3xl border border-border bg-card/30 p-4 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground shrink-0">
+                  <Sparkles className="size-4" />
                 </div>
-
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <Field
-                    label="Workspace name"
-                    value={form.workspaceName}
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        workspaceName: value,
-                      }))
-                    }
-                  />
-
-                  <Field
-                    label="Support email"
-                    value={form.supportEmail}
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        supportEmail: value,
-                      }))
-                    }
-                  />
-
-                  <Field
-                    label="Primary team"
-                    value={form.primaryTeam}
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        primaryTeam: value,
-                      }))
-                    }
-                  />
-
-                  <Field
-                    label="Timezone"
-                    value={form.timezone}
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        timezone: value,
-                      }))
-                    }
-                  />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Workspace profile
+                  </p>
+                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                    Basic workspace identity and support contact information
+                  </p>
                 </div>
               </div>
-            </>
+
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field
+                  label="Workspace name"
+                  value={form.workspaceName}
+                  onChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      workspaceName: value,
+                    }))
+                  }
+                />
+
+                <Field
+                  label="Support email"
+                  value={form.supportEmail}
+                  onChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      supportEmail: value,
+                    }))
+                  }
+                />
+
+                <Field
+                  label="Primary team"
+                  value={form.primaryTeam}
+                  onChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      primaryTeam: value,
+                    }))
+                  }
+                />
+
+                <Field
+                  label="Timezone"
+                  value={form.timezone}
+                  onChange={(value) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      timezone: value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
           )}
 
           {/* Notifications */}
-          <div className="rounded-3xl border border-border bg-card/30 p-5 sm:p-6">
+          <div className="rounded-3xl border border-border bg-card/30 p-4 sm:p-6">
             <div className="flex items-start gap-3">
-              <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground">
+              <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground shrink-0">
                 <Bell className="size-4" />
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">
                   Notifications
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                   Control when leads and agents receive operational alerts
                 </p>
               </div>
@@ -392,8 +377,7 @@ export default function SettingsPage() {
                       saveSettings({
                         notifications: {
                           ...settings.notifications,
-                          leadAlerts:
-                            !settings.notifications.leadAlerts,
+                          leadAlerts: !settings.notifications.leadAlerts,
                         },
                       });
                     }}
@@ -406,8 +390,7 @@ export default function SettingsPage() {
                       saveSettings({
                         notifications: {
                           ...settings.notifications,
-                          dailySummary:
-                            !settings.notifications.dailySummary,
+                          dailySummary: !settings.notifications.dailySummary,
                         },
                       });
                     }}
@@ -420,8 +403,7 @@ export default function SettingsPage() {
                       saveSettings({
                         notifications: {
                           ...settings.notifications,
-                          slackDigest:
-                            !settings.notifications.slackDigest,
+                          slackDigest: !settings.notifications.slackDigest,
                         },
                       });
                     }}
@@ -429,92 +411,88 @@ export default function SettingsPage() {
                 </>
               )}
             </div>
-
           </div>
 
           {isInternal && (
-            <>
-              {/* Automations */}
-              <div className="rounded-3xl border border-border bg-card/30 p-5 sm:p-6">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground">
-                    <Workflow className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Automation defaults
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Set workspace-wide automation behavior for triage and escalation
-                    </p>
-                  </div>
+            <div className="rounded-3xl border border-border bg-card/30 p-4 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground shrink-0">
+                  <Workflow className="size-4" />
                 </div>
-
-                <div className="mt-5 space-y-5">
-                  <div className="space-y-3">
-                    <ToggleRow
-                      label="Auto assign incoming tickets"
-                      enabled={form.autoAssign}
-                      onToggle={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          autoAssign: !prev.autoAssign,
-                        }))
-                      }
-                    />
-
-                    <ToggleRow
-                      label="Auto escalate overdue tickets"
-                      enabled={form.autoEscalation}
-                      onToggle={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          autoEscalation: !prev.autoEscalation,
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field
-                      label="Risk recalculation interval"
-                      value={form.riskInterval}
-                      onChange={(value) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          riskInterval: value,
-                        }))
-                      }
-                    />
-
-                    <Field
-                      label="Default queue fallback"
-                      value={form.queueFallback}
-                      onChange={(value) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          queueFallback: value,
-                        }))
-                      }
-                    />
-                  </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Automation defaults
+                  </p>
+                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                    Set workspace-wide automation behavior for triage and
+                    escalation
+                  </p>
                 </div>
-
               </div>
-            </>
+
+              <div className="mt-5 space-y-5">
+                <div className="space-y-3">
+                  <ToggleRow
+                    label="Auto assign incoming tickets"
+                    enabled={form.autoAssign}
+                    onToggle={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        autoAssign: !prev.autoAssign,
+                      }))
+                    }
+                  />
+
+                  <ToggleRow
+                    label="Auto escalate overdue tickets"
+                    enabled={form.autoEscalation}
+                    onToggle={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        autoEscalation: !prev.autoEscalation,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field
+                    label="Risk recalculation interval"
+                    value={form.riskInterval}
+                    onChange={(value) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        riskInterval: value,
+                      }))
+                    }
+                  />
+
+                  <Field
+                    label="Default queue fallback"
+                    value={form.queueFallback}
+                    onChange={(value) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        queueFallback: value,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Security */}
-          <div className="rounded-3xl border border-border bg-card/30 p-5 sm:p-6">
+          <div className="rounded-3xl border border-border bg-card/30 p-4 sm:p-6">
             <div className="flex items-start gap-3">
-              <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground">
+              <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground shrink-0">
                 <LockKeyhole className="size-4" />
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">
                   Security & access
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                   Access control and authentication preferences
                 </p>
               </div>
@@ -565,19 +543,24 @@ export default function SettingsPage() {
                   </>
                 )
               ) : (
-                <div className="rounded-2xl border border-border bg-background/35 p-5">
+                <div className="rounded-2xl border border-border bg-background/35 p-4 sm:p-5">
                   <p className="text-sm font-medium text-foreground">
                     Account Security
                   </p>
 
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    You can reset your password anytime from the <span className="font-medium text-foreground">My Profile</span> section above.
+                  <p className="mt-2 text-xs sm:text-sm leading-6 text-muted-foreground">
+                    You can reset your password anytime from the{" "}
+                    <span className="font-medium text-foreground">
+                      My Profile
+                    </span>{" "}
+                    section above.
                   </p>
                 </div>
               )}
             </div>
+
             {isInternal && (
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <CompactInfo
                   label="Session timeout"
                   value={
@@ -600,16 +583,16 @@ export default function SettingsPage() {
         {isInternal && (
           <div className="space-y-6">
             {/* Workspace health */}
-            <div className="rounded-3xl border border-primary/15 bg-primary/[0.05] p-5">
+            <div className="rounded-3xl border border-primary/15 bg-primary/[0.05] p-4 sm:p-5">
               <div className="flex items-start gap-3">
-                <div className="rounded-2xl border border-primary/20 bg-primary/10 p-2 text-primary">
+                <div className="rounded-2xl border border-primary/20 bg-primary/10 p-2 text-primary shrink-0">
                   <ShieldCheck className="size-4" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
                     Workspace health
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                     Quick snapshot of current configuration coverage
                   </p>
                 </div>
@@ -617,73 +600,83 @@ export default function SettingsPage() {
 
               <div className="mt-5 space-y-3">
                 {workspaceHealth.map((item) => (
-                  <MetricRow key={item.label} label={item.label} value={item.value} />
+                  <MetricRow
+                    key={item.label}
+                    label={item.label}
+                    value={item.value}
+                  />
                 ))}
               </div>
             </div>
 
             {/* SLA defaults summary */}
-            <div className="rounded-3xl border border-border bg-card/30 p-5">
+            <div className="rounded-3xl border border-border bg-card/30 p-4 sm:p-5">
               <div>
                 <p className="text-sm font-medium text-foreground">
                   SLA defaults
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                   Current workspace-wide SLA behavior
                 </p>
               </div>
 
               <div className="mt-5 space-y-3">
                 {slaDefaults.map((item) => (
-                  <MetricRow key={item.label} label={item.label} value={item.value} />
+                  <MetricRow
+                    key={item.label}
+                    label={item.label}
+                    value={item.value}
+                  />
                 ))}
               </div>
 
-              <button className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
+              <button className="mt-5 inline-flex w-full sm:w-auto justify-center cursor-pointer items-center gap-2 rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
                 Open SLA policies
                 <ChevronRight className="size-4" />
               </button>
             </div>
 
             {/* Billing / plan */}
-            <div className="rounded-3xl border border-border bg-card/30 p-5">
+            <div className="rounded-3xl border border-border bg-card/30 p-4 sm:p-5">
               <div className="flex items-start gap-3">
-                <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground">
+                <div className="rounded-2xl border border-border bg-background/35 p-2 text-muted-foreground shrink-0">
                   <CreditCard className="size-4" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
                     Billing & workspace plan
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                     Current internal workspace plan details
                   </p>
                 </div>
               </div>
 
               <div className="mt-5 rounded-2xl border border-border bg-background/35 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground font-medium">
                   Current plan
                 </p>
-                <p className="mt-2 text-lg font-semibold text-foreground">
+                <p className="mt-2 text-base sm:text-lg font-semibold text-foreground">
                   Internal Ops Pro
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
                   20 agents · automation enabled · SLA analytics included
                 </p>
               </div>
 
-              <button className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
+              <button className="mt-4 inline-flex w-full sm:w-auto justify-center cursor-pointer items-center gap-2 rounded-full border border-border bg-background/40 px-4 py-2 text-sm text-foreground transition-all duration-200 hover:border-primary/20 hover:bg-card">
                 Manage plan
                 <ChevronRight className="size-4" />
               </button>
             </div>
 
             {/* Danger zone */}
-            <div className="rounded-3xl border border-destructive/20 bg-destructive/[0.04] p-5">
+            <div className="rounded-3xl border border-destructive/20 bg-destructive/[0.04] p-4 sm:p-5">
               <div>
-                <p className="text-sm font-medium text-foreground">Danger zone</p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-foreground">
+                  Danger zone
+                </p>
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                   High-impact workspace actions
                 </p>
               </div>
@@ -702,7 +695,6 @@ export default function SettingsPage() {
           </div>
         )}
       </section>
-
     </div>
   );
 }
@@ -717,15 +709,15 @@ function Field({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10">
-      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+    <div className="rounded-2xl border border-border bg-background/35 p-3.5 sm:p-4 transition-all duration-200 hover:border-primary/10">
+      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground font-medium">
         {label}
       </p>
 
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-3 w-full rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary"
+        className="mt-2.5 w-full rounded-xl border border-border bg-card/50 px-3.5 py-2.5 text-sm text-foreground outline-none transition-all focus:border-primary"
       />
     </div>
   );
@@ -743,8 +735,8 @@ function CompactInfo({
   onChange?: (value: string) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-background/35 p-4 transition-all duration-200 hover:border-primary/10">
-      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+    <div className="rounded-2xl border border-border bg-background/35 p-3.5 sm:p-4 transition-all duration-200 hover:border-primary/10">
+      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground font-medium">
         {label}
       </p>
 
@@ -755,14 +747,13 @@ function CompactInfo({
           className="mt-2 w-full rounded-xl border border-border bg-card/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
         />
       ) : (
-        <p className="mt-2 text-sm font-medium text-foreground">
+        <p className="mt-2 text-sm font-medium text-foreground truncate">
           {value}
         </p>
       )}
     </div>
   );
 }
-
 
 function ToggleRow({
   label,
@@ -775,20 +766,23 @@ function ToggleRow({
 }) {
   return (
     <button
+      type="button"
       onClick={onToggle}
-      className="flex w-full items-center justify-between rounded-2xl border border-border bg-background/35 px-4 py-3 transition-all duration-200 hover:border-primary/10"
+      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border bg-background/35 p-3.5 sm:px-4 sm:py-3 transition-all duration-200 hover:border-primary/10 text-left"
     >
-      <span className="pr-4 text-left text-sm text-foreground">
+      <span className="text-xs sm:text-sm text-foreground font-normal">
         {label}
       </span>
 
       <div
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-all ${enabled ? "bg-primary" : "bg-muted"
-          }`}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-all ${
+          enabled ? "bg-primary" : "bg-muted"
+        }`}
       >
         <div
-          className={`absolute top-1 size-4 rounded-full bg-white transition-all ${enabled ? "left-6" : "left-1"
-            }`}
+          className={`absolute top-1 size-4 rounded-full bg-white transition-all ${
+            enabled ? "left-6" : "left-1"
+          }`}
         />
       </div>
     </button>
@@ -803,9 +797,11 @@ function MetricRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-border bg-card/50 px-4 py-3 transition-all duration-200 hover:border-primary/10">
-      <span className="text-sm text-foreground">{label}</span>
-      <span className="font-mono text-sm text-foreground">{value}</span>
+    <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-card/50 px-4 py-3 transition-all duration-200 hover:border-primary/10">
+      <span className="text-xs sm:text-sm text-foreground">{label}</span>
+      <span className="font-mono text-xs sm:text-sm font-medium text-foreground shrink-0">
+        {value}
+      </span>
     </div>
   );
 }
@@ -818,10 +814,13 @@ function DangerAction({
   description: string;
 }) {
   return (
-    <button className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-2xl border border-destructive/20 bg-background/35 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-destructive/35">
+    <button
+      type="button"
+      className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-2xl border border-destructive/20 bg-background/35 p-3.5 sm:p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-destructive/35"
+    >
       <div>
         <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+        <p className="mt-1 text-xs sm:text-sm leading-relaxed text-muted-foreground">
           {description}
         </p>
       </div>
