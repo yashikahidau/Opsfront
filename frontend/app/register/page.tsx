@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { useAuth } from "@/context/AuthContext";
 import RegisterForm, {
   RegisterFormValues,
 } from "@/components/auth/RegisterForm";
@@ -15,25 +15,23 @@ import {
   saveAuth,
 } from "@/lib/auth";
 
-import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();
-
+  const { user } = useAuth();
   const { refreshUser } = useAuth();
-
   const [bootLoading, setBootLoading] =
     useState(true);
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    if (user || isAuthenticated()) {
       router.replace("/dashboard");
       return;
     }
 
     setBootLoading(false);
-  }, [router]);
+  }, [user, router]);
 
   const handleRegister = async (
     values: RegisterFormValues

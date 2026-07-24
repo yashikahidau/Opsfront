@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { Logo } from './logo'
 import { cn } from '@/lib/utils'
+import { useAuth } from "@/context/AuthContext"
+import Link from "next/link"
 
 const NAV = [
   { label: 'Product', href: '#product' },
@@ -15,6 +17,7 @@ const NAV = [
 ]
 
 export function SiteHeader() {
+  const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -50,20 +53,47 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <a
-            href="/login"
-            className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Sign in
-          </a>
-          <a
-            href="#cta"
-            className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5"
-          >
-            Request demo
-          </a>
+      <div className="hidden items-center gap-3 md:flex">
+  {user ? (
+    <>
+      <Link
+        href="/dashboard"
+        className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+      >
+        Dashboard
+      </Link>
+
+      <Link
+        href="/dashboard"
+        className="flex items-center gap-2 rounded-full border border-border bg-background/60 px-2 py-1 transition hover:border-primary/20"
+      >
+        <div className="grid size-8 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+          {user.name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .slice(0, 2)}
         </div>
+      </Link>
+    </>
+  ) : (
+    <>
+      <Link
+        href="/login"
+        className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+      >
+        Sign in
+      </Link>
+
+      <a
+        href="#cta"
+        className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground"
+      >
+        Request demo
+      </a>
+    </>
+  )}
+</div>
 
         <button
           type="button"
@@ -87,21 +117,35 @@ export function SiteHeader() {
               {item.label}
             </a>
           ))}
-          <div className="mt-2 grid grid-cols-2 gap-2 p-1">
-            <a
-              href="/login"
-              className="rounded-lg border border-border px-3 py-2 text-center text-sm text-foreground"
-            >
-              Sign in
-            </a>
-            <a
-              href="#cta"
-              onClick={() => setOpen(false)}
-              className="rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground"
-            >
-              Request demo
-            </a>
-          </div>
+         <div className="mt-2 space-y-2 p-1">
+  {user ? (
+    <Link
+      href="/dashboard"
+      onClick={() => setOpen(false)}
+      className="block rounded-lg border border-border px-3 py-2.5 text-center text-sm font-medium text-foreground transition hover:bg-accent"
+    >
+      Dashboard
+    </Link>
+  ) : (
+    <div className="grid grid-cols-2 gap-2">
+      <Link
+        href="/login"
+        onClick={() => setOpen(false)}
+        className="rounded-lg border border-border px-3 py-2 text-center text-sm text-foreground"
+      >
+        Sign in
+      </Link>
+
+      <a
+        href="#cta"
+        onClick={() => setOpen(false)}
+        className="rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground"
+      >
+        Request Demo
+      </a>
+    </div>
+  )}
+</div>
         </div>
       )}
     </header>

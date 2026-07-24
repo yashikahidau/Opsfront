@@ -2,6 +2,7 @@ const Ticket = require("../models/Ticket");
 const logActivity = require("../utils/logActivity");
 const SlaPolicy = require("../models/SlaPolicy");
 const parseDuration = require("../utils/parseDuration");
+const createNotification = require("../utils/createNotification");
 
 // ======================================
 // Create Ticket
@@ -86,6 +87,30 @@ const createTicket = async (req, res) => {
       "assignedTo",
       "name email"
     );
+
+    // Customer notification
+await createNotification({
+  recipient: ticket.createdBy._id,
+  recipientType: "customer",
+  title: "Ticket Created",
+  message: `Your ticket "${ticket.title}" has been created successfully.`,
+  type: "ticket_created",
+  entityType: "ticket",
+  entityId: ticket._id,
+});
+
+// Assigned agent notification
+if (ticket.assignedTo) {
+  await createNotification({
+    recipient: ticket.assignedTo._id,
+    recipientType: "internal",
+    title: "New Ticket Assigned",
+    message: `A new ticket "${ticket.title}" has been assigned to you.`,
+    type: "ticket_assigned",
+    entityType: "ticket",
+    entityId: ticket._id,
+  });
+}
 
     return res.status(201).json({
       success: true,
@@ -370,6 +395,31 @@ const updateTicketStatus = async (req, res) => {
       message: `Changed status from "${previousStatus}" to "${status}"`,
     });
 
+    await createNotification({
+  recipient: ticket.createdBy._id,
+  recipientType: "customer",
+  title: "Ticket Updated",
+  message: `Your ticket "${ticket.title}" status changed to "${status}".`,
+  type: "ticket_status_changed",
+  entityType: "ticket",
+  entityId: ticket._id,
+});
+
+if (
+  ticket.assignedTo &&
+  ticket.assignedTo._id.toString() !== req.user.id.toString()
+) {
+  await createNotification({
+    recipient: ticket.assignedTo._id,
+    recipientType: "internal",
+    title: "Ticket Status Updated",
+    message: `Ticket "${ticket.title}" is now "${status}".`,
+    type: "ticket_status_changed",
+    entityType: "ticket",
+    entityId: ticket._id,
+  });
+}
+
     res.json({
       success: true,
       ticket,
@@ -447,6 +497,28 @@ const updateTicketPriority = async (req, res) => {
       type: "priority",
       message: `Changed priority from "${previousPriority}" to "${priority}"`,
     });
+
+    if (ticket.assignedTo) {
+  await createNotification({
+    recipient: ticket.assignedTo._id,
+    recipientType: "internal",
+    title: "Ticket Assigned",
+    message: `You have been assigned "${ticket.title}".`,
+    type: "ticket_assigned",
+    entityType: "ticket",
+    entityId: ticket._id,
+  });
+}
+
+await createNotification({
+  recipient: ticket.createdBy._id,
+  recipientType: "customer",
+  title: "Support Update",
+  message: `Your ticket "${ticket.title}" has been assigned to a support agent.`,
+  type: "ticket_updated",
+  entityType: "ticket",
+  entityId: ticket._id,
+});
 
     res.json({
       success: true,

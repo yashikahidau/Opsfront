@@ -33,15 +33,7 @@ const protect = async (req, res, next) => {
     user.lastSeen = new Date();
     await user.save();
 
-    req.user = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      workspaceName: user.workspaceName,
-      role: user.role,
-      userType: user.userType,
-      isActive: user.isActive,
-    };
+   req.user = user;
 
     next();
   } catch (error) {

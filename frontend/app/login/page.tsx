@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { useAuth } from "@/context/AuthContext";
 import LoginForm, {
   LoginFormValues,
 } from "@/components/auth/LoginForm";
@@ -14,24 +14,23 @@ import {
   saveAuth,
 } from "@/lib/auth";
 
-import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
-
+  const { user } = useAuth();
   const { refreshUser } = useAuth();
 
   const [bootLoading, setBootLoading] = useState(true);
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    if (user || isAuthenticated()) {
       router.replace("/dashboard");
       return;
     }
 
     setBootLoading(false);
-  }, [router]);
+  }, [user, router]);
 
   const handleLogin = async (
     values: LoginFormValues

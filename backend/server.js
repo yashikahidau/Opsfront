@@ -18,7 +18,7 @@ const queueRoutes = require("./routes/queueRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const slaPolicyRoutes = require("./routes/slaPolicyRoutes");
 const settingsRoutes = require("./routes/settings");
-
+const notificationRoutes = require("./routes/notificationRoutes");
 // ===== middleware =====
 app.use(
   cors({
@@ -51,6 +51,7 @@ app.use("/api/queue",queueRoutes);
 app.use("/api/analytics",analyticsRoutes);
 app.use("/api/sla-policies",slaPolicyRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 const PORT = process.env.PORT || 5000;
 
