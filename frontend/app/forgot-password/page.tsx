@@ -1,6 +1,6 @@
 "use client";
-
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
 
@@ -9,14 +9,12 @@ import { ForgotPasswordValues } from "@/lib/validation/auth";
 
 import { toast } from "sonner";
 
-import { useSearchParams } from "next/navigation";
-
 type ForgotPasswordResponse = {
      success: boolean;
      message: string;
 };
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordContent() {
      const router = useRouter();
 
      const searchParams = useSearchParams();
@@ -110,4 +108,12 @@ export default function ForgotPasswordPage() {
 
           </main>
      );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ForgotPasswordContent />
+    </Suspense>
+  );
 }
